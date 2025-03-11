@@ -125,10 +125,10 @@ class haxe.exceptions.PosException
 class haxe.ds._GenericStack.GenericStackIterator_hxcpp_debug_jsonrpc_eval_Token
 class haxe.ds.WeakMap
 class haxe.ds._Vector.Vector_Impl_
-class haxe.ds.StringMap
 class haxe.ds._ReadOnlyArray.ReadOnlyArray_Impl_
 enum haxe.ds.Option
 class haxe.ds.ObjectMap
+class haxe.ds._Map.Map_Impl_
 class haxe.ds._List.ListKeyValueIterator
 class haxe.ds._List.ListIterator
 class haxe.ds._List.ListNode
@@ -201,12 +201,12 @@ class cpp.vm.Parameter
 class cpp.cppia.Host
 class cpp.Lib
 class cpp.Int64Map
-interface haxe.IMap
 class cpp._Int64.Int64_Impl_
 class cpp.Finalizable
 class core.util.TypeUtils
 class core.scripting.ScriptLoader
-class haxe.ds._Map.Map_Impl_
+class haxe.ds.StringMap
+interface haxe.IMap
 class core.scripting.ScriptHost
 interface core.scripting.IScriptHost
 class core.scripting.ScriptCompiler

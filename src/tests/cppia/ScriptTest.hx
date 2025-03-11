@@ -4,6 +4,9 @@ import haxe.io.Path;
 import core.scripting.ScriptLoader;
 import core.ecs.Entity;
 
+#if sys
+import sys.FileSystem;
+#end
 
 @:expose
 @:keep
@@ -52,6 +55,13 @@ class ScriptTest {
 		Log.info("Setting script directory to: " + scriptDirectory);
 		ScriptLoader.scriptDirectory = scriptDirectory;
 
+		// make sure the script directory exists
+		#if sys
+		if (!FileSystem.exists(scriptDirectory)) {
+			FileSystem.createDirectory(scriptDirectory);
+		}
+		#end
+
 		#if scriptable
 		if (scriptSourceDirectory.length == 0) {
 			// check env variable
@@ -60,7 +70,7 @@ class ScriptTest {
 
 		if (scriptSourceDirectory.length == 0) {
 			// default to "scripts"
-			scriptSourceDirectory = Path.join([Path.directory(Sys.programPath()), "src"]); // default to src in the same directory as the executable
+			scriptSourceDirectory = Path.join([Path.directory(Sys.programPath()), "../../scripts"]); // default to src in the same directory as the executable
 		}
 
 		Log.info("Setting script source (.hx) directory to: " + scriptSourceDirectory);
