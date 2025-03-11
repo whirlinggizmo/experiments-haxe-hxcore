@@ -1,0 +1,9 @@
+hxml/common.hxml 
+
+-cp src
+-cp scripts
+-lib heaps  
+--cppia cppiatest/test.cppia 
+--debug
+-D scriptable
+World

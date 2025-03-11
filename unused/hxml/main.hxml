@@ -1,0 +1,22 @@
+
+common.hxml
+--each
+
+#--cmd echo "Compiling core .js target..."
+-main app.App
+
+--debug
+-D source-map-content
+-D source-map
+-D enable-script-reload
+--dce no
+#-lib heaps
+
+# break out the build into separate files
+#-lib genes
+#-D genes.unchanged_no_rewrite
+
+# this is appended by the vite-plugin-haxe-watcher script, allowing it to change the output name
+# -js out/main.js
+
+--cmd echo "Build complete."

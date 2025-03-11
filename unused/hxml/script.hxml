@@ -1,0 +1,22 @@
+
+common.hxml
+# for access to Script class without the package namespace 
+#-cp core/scripting
+#-cp scripts
+
+--each
+
+-D source-map-content
+#-D source-map
+--debug
+--dce no
+#-lib heaps
+
+# break out the build into separate files
+#-lib genes
+#-D genes.unchanged_no_rewrite
+
+
+# the script class and destinations file should be included as an argument in the command line
+# e.g.: "haxe hxml/script.hxml -js out/js/scripts/Test.js Test"
+# 'Test' is the name of the script class (without the .hx extension, in the 'scripts' directory)

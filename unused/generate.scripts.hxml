@@ -1,0 +1,10 @@
+hxml/common.hxml
+ --each
+
+ --cmd echo -n "Generating scripts.hxml..."
+
+--next
+--macro ScriptGenerator.generateScriptsList('scripts', 'gen/scripts.hxml')
+
+--next
+--cmd echo "OK"

@@ -1,0 +1,127 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "HashLink (launch)",
+            "request": "launch",
+            "type": "hl",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": {
+                "type": "haxe",
+                "args": "active configuration"
+            }
+        },
+        {
+            "name": "Interpreter",
+            "type": "haxe-eval",
+            "request": "launch",
+            "args": [
+                "build.scripts.hxml",
+                "build.common.hxml",
+                "scripts.hxml",
+                "-main",
+                "Main",
+                "--interp"
+            ]
+        },
+        {
+            "name": "Javascript (dev)",
+            "request": "launch",
+            "type": "chrome",
+            "url": "https://localhost:4444",
+            "userDataDir": "${workspaceFolder}/.vscode/vscode-chrome-debug-userdatadir",
+            "linux": {
+                "browserLaunchLocation": "ui", // "ui" will launch browser locally vs "workspace" (or "null") which will launch on the host machine
+                "runtimeExecutable": "/usr/bin/brave-browser"
+            },
+            "windows": {
+                "browserLaunchLocation": "ui",
+                "runtimeExecutable": "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+            },
+            "runtimeArgs": [
+                "--new-window",
+                "--remote-debugging-port=9222",
+                "--disable-session-crashed-bubble",
+                "--disable-infobars",
+                "--show-fps-counter",
+            ],
+            "webRoot": "${workspaceRoot}/html",
+            "sourceMaps": true,
+            "internalConsoleOptions": "openOnSessionStart",
+            "pauseForSourceMap": true
+        },
+        {
+            "name": "Javascript (dist)",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:8000",
+            "userDataDir": "${workspaceFolder}/.vscode/vscode-chrome-debug-userdatadir",
+            "linux": {
+                "browserLaunchLocation": "ui", // "ui" will launch browser locally vs "workspace" (or "null") which will launch on the host machine
+                "runtimeExecutable": "/usr/bin/brave-browser"
+            },
+            "windows": {
+                "browserLaunchLocation": "ui",
+                "runtimeExecutable": "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+            },
+            "runtimeArgs": [
+                "--new-window",
+                "--remote-debugging-port=9222",
+                "--disable-session-crashed-bubble",
+                "--disable-infobars",
+                "--show-fps-counter",
+            ],
+            "webRoot": "${workspaceRoot}",
+            "sourceMaps": true,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Eval",
+            "type": "haxe-eval",
+            "request": "launch",
+            "args": [
+                "hxml/build.eval.hxml",
+                //"gen/scripts.hxml",
+                //"-main",
+                //"Main",
+                //"--interp"
+            ]
+        },
+        {
+            "name": "HXCPP",
+            "type": "hxcpp",
+            "request": "launch",
+            "program": "${workspaceFolder}/dist/cpp/Main",
+            "preLaunchTask": "kill Main",
+            "postDebugTask": "kill Main"
+        },
+        {
+            "name": "Javascript (remote)",
+            "request": "launch",
+            "type": "chrome",
+            "url": "https://localhost:4444",
+            "userDataDir": "${workspaceFolder}/.vscode/vscode-chrome-debug-userdatadir",
+            "linux": {
+                "runtimeExecutable": "/usr/bin/brave-browser"
+            },
+            "windows": {
+                "runtimeExecutable": "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+            },
+            "webRoot": "${workspaceRoot}/html",
+            "sourceMaps": true,
+            "internalConsoleOptions": "openOnSessionStart",
+            "pauseForSourceMap": true
+        },
+        {
+            "name": "HXCPP (cppia)",
+            "type": "hxcpp",
+            "request": "launch",
+            "program": "${workspaceFolder}/dist/cppia/Main"
+            //"preLaunchTask": "kill Main-debug",
+            //"postDebugTask": "kill Main-debug"
+        },
+    ]
+}

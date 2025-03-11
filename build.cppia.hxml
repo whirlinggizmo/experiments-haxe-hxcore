@@ -1,0 +1,51 @@
+
+
+# generate the list of all script files
+#--cmd echo -n "Building scripts list... "
+#--next
+#--macro core.macros.ScriptCompiler.generateScriptsList('scripts', 'gen/scripts.hxml')
+#--cmd echo "OK"
+
+#--next
+#--cmd echo "Building .cpp target (with cppia support)...\n"
+#--next
+
+-lib hxcore
+-cp src
+
+
+# enable cppia
+-D scriptable 
+-cpp out/cppia
+
+#--dce full
+
+#-D HXCPP_DEBUGGER
+
+# force include some classes that cppia seems to think are here
+#--macro include('haxe.Exception')
+#--macro include('core.scripting.Script')
+
+# include the scripts as part of the build
+#gen/scripts.hxml
+
+
+--define HAXE_OUTPUT_FILE=Main
+--main tests.cppia.ScriptTest
+
+--debug
+# vscode debugger
+-lib hxcpp-debug-server
+--dce no
+
+#-D CPPIA_NO_JIT
+
+#--next
+# vscode sometimes doesn't kill the old process
+--cmd pkill -9 Main || true
+
+--cmd mkdir -p dist/cppia
+--cmd cp out/cppia/Main dist/cppia/Main
+--cmd cp export_classes.info scripts/export_classes.info
+--cmd echo ""
+--cmd echo "Build complete."

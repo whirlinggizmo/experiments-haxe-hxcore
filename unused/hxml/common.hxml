@@ -1,0 +1,19 @@
+#-cp core/src
+# for access to Script class without the package namespace 
+#-cp core/scripting
+#-cp scripts
+#-cp core
+
+
+
+#D use-remote-pak
+-D resourcesPath=res
+-D js-es=6
+
+#-D message-reporting=pretty
+
+
+
+
+
+
