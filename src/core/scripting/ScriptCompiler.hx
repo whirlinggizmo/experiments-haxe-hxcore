@@ -299,7 +299,6 @@ class ScriptCompiler {
 		var i = args.length - 1; // Start at the end so we don't cause problems when we remove arguments
 
 		while (i >= 0) {
-			trace("i: " + i);
 			var currentArg = args[i].toLowerCase();
 			currentArg = StringTools.trim(currentArg);
 
