@@ -89,6 +89,10 @@ web_modules/
 out
 dist
 html/dist
+example/dist
+example/gen
+example/bin
+example/out
 
 # Nuxt.js build / generate output
 .nuxt
