@@ -11,8 +11,6 @@
 -cpp example/out
 --main ScriptTest
 
-# enable the hot compile feature
--D enable_hot_compile
 
 # enable cppia scripting...
 -D scriptable 

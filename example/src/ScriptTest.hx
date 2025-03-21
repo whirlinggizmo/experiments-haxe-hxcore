@@ -89,7 +89,6 @@ class ScriptTest {
 		}
 
 		// script compiler
-		#if enable_hot_compile
 		// get the script source directory from the command line, if specified
 		var args = Sys.args();
 		for (i in 0...args.length) {
@@ -125,9 +124,7 @@ class ScriptTest {
 		} else {
 			Log.info("Hot compile disabled");
 		}
-		#else
-		Log.warn("enable_hot_compile is not defined, skipping setting script source directory");
-		#end
+		
 		#end // (scriptable)
 
 		new ScriptTest();
