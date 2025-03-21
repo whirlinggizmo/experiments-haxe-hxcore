@@ -1,17 +1,14 @@
 package core.scripting;
 
-import haxe.macro.Context;
-import haxe.macro.Compiler;
 import sys.FileSystem;
 import haxe.io.Path;
 import core.logging.Log;
 import sys.io.File;
-import sys.io.FileOutput;
 
 // A script generator that generates "script" files from .hx files
-// hxml can't do variables, so we use this "script"
-// Usage:
-// haxe --run ScriptCompiler --scriptDir scripts --scriptName Test --extension cppia --outputDir bin/cppia/scripts
+// hxml can't do variables, so we use this 
+// Usage example: Compile 'Test.hx' in the 'scripts' directory to 'Test.cppia' in the 'bin/cppia/scripts' directory:
+// haxe --run core.scripting.ScriptCompiler --scriptDir scripts --scriptName Test --target cppia --outputDir bin/cppia/scripts
 @:keep
 class ScriptCompiler {
 	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, target:String, haxeArgs:Array<String>,
@@ -72,9 +69,39 @@ class ScriptCompiler {
 
 		// compile the script
 
-		var cmd = "haxe";
+		// try to find the haxe executable
+		// try which?
+		var cmd = new sys.io.Process("which", ["haxe"]).stdout.readAll().toString();
+		cmd = StringTools.trim(cmd);
+		trace("which haxe: " + cmd);
+		if (cmd == null || !FileSystem.exists(cmd)) {
+			cmd = Sys.getEnv("HAXEPATH");
+		}
+		if (cmd == null || !FileSystem.exists(Path.join([cmd, "haxe"]))) {
+			// standard location?
+			cmd = "/usr/local/bin/haxe";
+		}
+		if (!FileSystem.exists(cmd)) {
+			// use our hardcoded path?
+			cmd = "/home/rknopf/toolchains/haxe/haxe-4.3.6/haxe";
+		}
+		if (!FileSystem.exists(cmd)) {
+			Log.error("Unable to find haxe executable");
+			return -1;
+		}
+
+		trace("Using haxe executable: " + cmd);
+
 		var fullSourceDir = Path.join([rootDir, sourceDir]);
 		var classInfoFile = Path.join([fullSourceDir, "export_classes.info"]);
+
+		if (!FileSystem.exists(classInfoFile)) {
+			trace("Class info file not found: " + classInfoFile);
+			return -1;
+		} else {
+			trace("Class info file found: " + classInfoFile);
+		}
+
 		// classInfoFile = '/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/scripts/export_classes.info';
 		var args = ["-cp", fullSourceDir, "-lib", "hxcore", "-D", 'dll_import=$classInfoFile'];
 

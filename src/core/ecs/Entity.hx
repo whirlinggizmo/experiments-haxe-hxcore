@@ -104,9 +104,10 @@ class Entity {
 		var scriptHost = scripts.get(scriptName);
 		if (scriptHost != null) {
 			scriptHost.dispose();
-			scripts.remove(scriptName);
 			Log.debug("Detached script: " + scriptName);
 		}
+		scripts.remove(scriptName);
+		Log.debug("Removed script: " + scriptName);
 	}
 
 	/**

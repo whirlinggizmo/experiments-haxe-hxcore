@@ -4,16 +4,21 @@ package core.scripting;
 // import core.app.IApp;
 // import haxe.macro.Type.Ref;
 // import core.util.TypeUtils;
+import core.events.EventEmitter.EventListener;
 import core.events.EventEmitter;
 // import core.events.EventEmitterTracker;
 import core.logging.Log;
 import core.scripting.ScriptContext;
 import core.scripting.Script;
 
+
+
 interface IScriptHost {
 	public function dispatchEvent(eventId:String, ?eventData:Dynamic):Void;
-	public function addEventListener(eventName:String, callback:String):Void; // refer to functions by name, not function object
-	public function removeEventListener(eventName:String, callback:String):Void; // refer to functions by name, not function object
+	public function addEventListener(eventName:String, callback:EventListener):Void; 
+	public function removeEventListener(eventName:String, callback:EventListener):Void; 
+	public function removeEventListeners(eventName:String):Void; 
+	public function removeAllEventListeners():Void; 
 
 	public function invoke(functionName:String, ...args:Dynamic):Dynamic;
 	public function setVar(key:String, value:Dynamic):Void;
@@ -53,7 +58,7 @@ class ScriptHost implements IScriptHost {
 		//	this.event.eventEmitter = externalEventEmitter;
 		// }
 		this.event = new EventEmitter();
-		this.ctx = {}; // ScriptContext.create();
+		this.ctx = {};
 
 		scriptCreated = false;
 		scriptLoaded = false;
@@ -81,10 +86,12 @@ class ScriptHost implements IScriptHost {
 
 	public function getVar(key:String):Dynamic {
 		return Reflect.getProperty(this.ctx, key);
+		//return this.ctx[key];
 	}
 
 	public function setVar(key:String, value:Dynamic):Void {
 		Reflect.setProperty(this.ctx, key, value);
+		//this.ctx[key] = value;
 	}
 
 	public function loadScript(scriptName:String, ?onCreatedCallback:ScriptHost->Void, ?onLoadedCallback:ScriptHost->Void) {
@@ -178,19 +185,29 @@ class ScriptHost implements IScriptHost {
 		this.event.emit(eventId, eventData);
 	}
 
-	public function addEventListener(eventId:String, callback:String) {
+	public function addEventListener(eventId:String, callback:EventListener) {
 		// springboard so we can use strings for function names and lookup the actual function with Reflection
-		var eventListener = (args:Dynamic) -> {
-			this.invoke(callback, args);
-		}
-		this.event.on(eventId, eventListener);
+			// disabled for now, since we lose the ability to remove the eventlistener (it's in a closure)
+		//var eventListener = (args:Dynamic) -> {
+		//	this.invoke(callback, args);
+		//}
+		//this.event.on(eventId, eventListener);
+		this.event.on(eventId, callback);
 	}
 
-	public function removeEventListener(eventId:String, callback:String) {
-		// this.event.off(eventId, callback);
-		// hmm.. the event callback is done in a closure, so we don't know what it is
-		// TODO:  track the event callbacks so we can remove them?
-		Log.warn("TODO: removeEventListener() not implemented");
+	public function removeEventListener(eventId:String, callback:EventListener) {
+		this.event.off(eventId, callback);
+		// hmm.. the event callback use to be a function name and registered in a closure
+		// but we don't know the function pointer outside that closure, so we can't remove it
+		// for now, we'll just leave it in the event emitter and force the script to re-add after a reload
+	}
+
+	public function removeEventListeners(eventId:String) {
+		this.event.clear(eventId);
+	}
+
+	public function removeAllEventListeners() {
+		this.event.clearAll();
 	}
 
 	public function dispose() {
@@ -199,10 +216,10 @@ class ScriptHost implements IScriptHost {
 		if (this.script != null) {
 			setScriptEnvironment();
 			this.script._baseUnload();
-			this.script = null;
-			this.ctx = null;
-			this.event = null;
-			this.scriptName = 'unknown';
 		}
+		this.script = null;
+		this.ctx = null;
+		this.event = null;
+		this.scriptName = 'unknown';
 	}
 }

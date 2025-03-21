@@ -39,13 +39,34 @@ class FileWatcher {
     var running:Bool;
 
 	public function new(rootDirectory:String, filter:Null<String>, callback:FileChangeCallback) {
-		if (!FileSystem.exists(rootDirectory) || !FileSystem.isDirectory(rootDirectory)) {
-			Log.error('FileWatcher: Invalid root directory: $rootDirectory');
-			rootDirectory = null;
+
+		this.callback = callback;
+		this.pollInterval = 1000;
+		this.files = new Map<String, Float>();
+        this.loopTimer = null;
+        this.running = false;
+		this.rootDirectory = null;
+		this.filter = null;
+
+
+		if (rootDirectory == null) {
+			Log.error('FileWatcher: Root directory not set');
 			return;
 		}
 
-		this.rootDirectory = rootDirectory;
+		if (callback == null) {
+			Log.error('FileWatcher: Callback not set');
+			return;
+		}
+
+
+
+
+		if (!FileSystem.exists(rootDirectory) || !FileSystem.isDirectory(rootDirectory)) {
+			Log.error('FileWatcher: Invalid root directory: $rootDirectory');
+			return;
+		}
+
 		try {
 			this.filter = filter != null ? new EReg(filter, "") : null;
 		} catch (e) {
@@ -53,16 +74,17 @@ class FileWatcher {
 			this.filter = null;
 		}
 		//this.filter = filter != null ? new EReg(filter, "") : null;
-		this.callback = callback;
-		this.pollInterval = 1000;
-		this.files = new Map<String, Float>();
-        this.loopTimer = null;
-        this.running = false;
+
+		this.rootDirectory = rootDirectory;
+
+		//trace('FileWatcher: Root directory: ${this.rootDirectory}, filter: ${this.filter}, callback: ${this.callback}');
+
 	}
 
 	public function start(pollInterval:Int = 1000) {
 		if (rootDirectory == null) {
-			Log.warn("Filewatcher: Root directory not set, ignoring.");
+			Log.error("Filewatcher: Root directory not set, aborting.");
+			return;
 		}
         this.pollInterval = pollInterval;
 
@@ -81,6 +103,11 @@ class FileWatcher {
             loopTimer = null;
         }
     }
+
+	public function dispose() {
+		stop();
+		this.files.clear();
+	}	
 
 	function scanDirectory(invokeCallbackOnChange:Bool = true) {
 		var currentFiles = new Map<String, Float>();
@@ -139,7 +166,7 @@ class FileWatcher {
 
 class FileWatcher {
     public function new(rootDirectory:String, filter:Null<String>, callback:FileChangeCallback, watchInterval:Int = 1000) {
-        //Log.warn("FileWatcher not available on this platform (requires sys)");
+        Log.warn("FileWatcher not available on this platform (requires sys)");
     }
 
     public function start() {

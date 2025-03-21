@@ -1,3 +1,0 @@
-# This isn't intended to use to build the library, it's just here to make the language server happy during development
--cp src
--cp example/src
