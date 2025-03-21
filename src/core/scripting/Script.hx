@@ -4,6 +4,7 @@ package core.scripting;
 // import core.app.IApp;
 // import core.events.EventEmitter;
 // import core.events.EventEmitterTracker;
+import core.events.EventEmitter.EventListener;
 import core.logging.Log;
 import core.scripting.ScriptContext;
 import core.scripting.ScriptHost;
@@ -32,6 +33,7 @@ class Script {
 	public var scriptDirectory:String = ""; // replaced by the ScriptLoader when it loads the script
 
 	public inline function log(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String) {
+		/*
 		var p:haxe.PosInfos = {
 			fileName: scriptDirectory + '/' + pos.fileName,
 			lineNumber: pos?.lineNumber ?? 0,
@@ -39,21 +41,31 @@ class Script {
 			methodName: pos?.methodName ?? "",
 			className: pos?.className ?? scriptName
 		};
-		Log.log(s, p, (tag == null ? 'SCRIPT: ${scriptName}' : tag));
+		*/
+		Log.log(s, pos, (tag == null ? 'SCRIPT: ${scriptName}' : tag));
 	}
 	
-	public function addEventListener(eventName:String, callback:String):Void {
+	public function addEventListener(eventName:String, callback:EventListener):Void {
 		Log.debug("Adding event listener: " + eventName);
 		this.host?.addEventListener(eventName, callback);
 	}
 
-	public function removeEventListener(eventName:String, callback:String):Void {
+	public function removeEventListener(eventName:String, callback:EventListener):Void {
+		Log.debug("Removing event listener: " + eventName);
 		this.host?.removeEventListener(eventName, callback);
 	}
 
 	public function dispatchEvent(eventName:String, ?data:Dynamic):Void {
 		Log.debug("Dispatching event: " + eventName);
 		this.host?.dispatchEvent(eventName, data);
+	}
+
+	public function removeEventListeners(eventId:String):Void {
+		this.host?.removeEventListeners(eventId);
+	}
+
+	public function removeAllEventListeners():Void {
+		this.host?.removeAllEventListeners();
 	}
 
 	public function new() {
@@ -91,6 +103,9 @@ class Script {
 	// The base onUnload method, which calls the script's onUnload if it exists
 	public function _baseUnload():Void {
 		this.onUnload();
+		// since the event listener functions can change after an unload, we need to clear them
+		this.host?.removeAllEventListeners();
+
 		// if (this.event != null) {
 		// 	this.event.clearAll();
 		// }

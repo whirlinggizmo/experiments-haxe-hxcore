@@ -9,11 +9,13 @@ class Test extends Script {
 	override function onLoad() {
 		log("Test.load");
 		thing = "HELLO";
-		addEventListener("attack", "onAttack");
+		addEventListener("attack", onAttack);
 	}
 
 	override function onReload() {
 		log("Test.reload");
+		addEventListener("attack", onAttack);
+
 		log(ctx);
 		thing = ctx.stashed.thing;
 		log("after reload: " + thing);	
