@@ -1,5 +1,7 @@
 package core.logging;
 
+import haxe.io.Path;
+
 #if js
 import js.Syntax;
 #end
@@ -37,6 +39,10 @@ import js.Syntax;
 		// rjk changed the position layout so vscode will see it as a link
 		p = pos.fileName + ":" + pos.lineNumber;
 
+		if (!Path.isAbsolute(pos.fileName)) {
+			p = "./" + p;
+		}
+
 		// level from the enum
 		var l = toString();
 
@@ -46,7 +52,7 @@ import js.Syntax;
 		#if js
 		var fmt = '[' + (tag != null ? tag : '$l') + ']: $s';
 		#else
-		var fmt = '[' + (tag != null ? tag : '$l') + '] [./$p]: $s';
+		var fmt = '[' + (tag != null ? tag : '$l') + '] [$p]: $s';
 
 		var colorize = color && Sys.systemName() != "Windows";
 		if (pos.fileName.length > longest)
