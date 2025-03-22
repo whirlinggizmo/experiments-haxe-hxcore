@@ -47,6 +47,20 @@ class hxcpp.debug.jsonrpc.Server
 class sys.thread.Deque
 class hxcpp.debug.jsonrpc.eval.Parser
 class hxcpp.debug.jsonrpc._Server.References
+class hxcore.util.TypeUtils
+class hxcore.scripting.ScriptLoader
+class hxcore.scripting.ScriptHost
+interface hxcore.scripting.IScriptHost
+class hxcore.scripting.ScriptCompiler
+class hxcore.scripting.Script
+class hxcore.logging.Log
+class hxcore.logging._Log.LogLevel_Impl_
+class hxcore.io._FileWatcher.FileWatcher_Fields_
+class hxcore.io.FileWatcher
+enum hxcore.io.FileEvent
+class hxcore.events.EventEmitter
+class hxcore.ecs.EIDGenerator
+class hxcore.ecs.Entity
 class haxe.zip.Uncompress
 enum haxe.zip.FlushMode
 class haxe.zip.Compress
@@ -75,6 +89,7 @@ class haxe.exceptions.NotImplementedException
 class haxe.exceptions.PosException
 class haxe.ds._GenericStack.GenericStackIterator_hxcpp_debug_jsonrpc_eval_Token
 class haxe.ds._Vector.Vector_Impl_
+class haxe.ds.StringMap
 class haxe.ds.ObjectMap
 class haxe.ds._List.ListNode
 class haxe.ds.List
@@ -131,23 +146,8 @@ class cpp.vm.ThreadInfo
 class cpp.vm.StackFrame
 class cpp.vm.Parameter
 class cpp.Lib
-class cpp.Finalizable
-class core.util.TypeUtils
-class core.scripting.ScriptLoader
-class haxe.ds.StringMap
 interface haxe.IMap
-class core.scripting.ScriptHost
-interface core.scripting.IScriptHost
-class core.scripting.ScriptCompiler
-class core.scripting.Script
-class core.logging.Log
-class core.logging._Log.LogLevel_Impl_
-class core.io._FileWatcher.FileWatcher_Fields_
-class core.io.FileWatcher
-enum core.io.FileEvent
-class core.events.EventEmitter
-class core.ecs.EIDGenerator
-class core.ecs.Entity
+class cpp.Finalizable
 class Xml
 class _Xml.XmlType_Impl_
 class Type
@@ -264,16 +264,16 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/xml/Printer.hx /home/rknop
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/EventLoop.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/EventLoop.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/NoEventLoopException.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/NoEventLoopException.hx
 file ScriptTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/example/src/ScriptTest.hx
-file core/ecs/Entity.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/ecs/Entity.hx
-file core/ecs/EntityID.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/ecs/EntityID.hx
-file core/events/EventEmitter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/events/EventEmitter.hx
-file core/io/FileWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/io/FileWatcher.hx
-file core/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/logging/Log.hx
-file core/scripting/Script.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/scripting/Script.hx
-file core/scripting/ScriptCompiler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/scripting/ScriptCompiler.hx
-file core/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/scripting/ScriptHost.hx
-file core/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/core/scripting/ScriptLoader.cpp.hx
-file core/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/core/util/TypeUtils.hx
+file hxcore/ecs/Entity.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/Entity.hx
+file hxcore/ecs/EntityID.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/EntityID.hx
+file hxcore/events/EventEmitter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/events/EventEmitter.hx
+file hxcore/io/FileWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/io/FileWatcher.hx
+file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
+file hxcore/scripting/Script.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/Script.hx
+file hxcore/scripting/ScriptCompiler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptCompiler.hx
+file hxcore/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptHost.hx
+file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxcore/scripting/ScriptLoader.cpp.hx
+file hxcore/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/TypeUtils.hx
 file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/.vscode/extensions/vshaxe.hxcpp-debugger-1.2.4/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx
 file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/.vscode/extensions/vshaxe.hxcpp-debugger-1.2.4/hxcpp-debug-server/hxcpp/debug/jsonrpc/VariablesPrinter.hx
 file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/.vscode/extensions/vshaxe.hxcpp-debugger-1.2.4/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx

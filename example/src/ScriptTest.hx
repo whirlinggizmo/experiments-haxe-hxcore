@@ -1,10 +1,9 @@
 package;
 
-import core.scripting.Script;
 import haxe.io.Path;
-import core.scripting.ScriptLoader;
-import core.ecs.Entity;
-import core.logging.Log;
+import hxcore.scripting.ScriptLoader;
+import hxcore.ecs.Entity;
+import hxcore.logging.Log;
 
 @:expose
 @:keep
