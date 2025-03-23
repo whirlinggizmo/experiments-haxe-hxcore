@@ -211,12 +211,13 @@ class ScriptHost implements IScriptHost {
 	}
 
 	public function dispose() {
-		scriptCreated = false;
-		scriptLoaded = false;
+
 		if (this.script != null) {
 			setScriptEnvironment();
 			this.script._baseUnload();
 		}
+		scriptCreated = false;
+		scriptLoaded = false;
 		this.script = null;
 		this.ctx = null;
 		this.event = null;

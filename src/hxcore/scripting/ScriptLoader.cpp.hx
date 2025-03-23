@@ -27,7 +27,7 @@ class ScriptLoader {
 	private static var scriptCache:Map<String, ScriptInfo> = new Map<String, ScriptInfo>();
 	private static var scriptDirectory:String = "./scripts/";
 	private static var scriptSourceDirectory:String = "./src/";
-	private static var hotReloadEnabled:Bool = false;
+	private static var scriptWatcherEnabled:Bool = false;
 	private static var hotCompileEnabled:Bool = false;
 
 	#if sys
@@ -42,8 +42,8 @@ class ScriptLoader {
 		ScriptLoader.scriptDirectory = scriptDirectory;
 	}
 
-	public static function enableHotReload():Void {
-		hotReloadEnabled = true;
+	public static function enableScriptWatcher():Void {
+		scriptWatcherEnabled = true;
 	}
 
 	public static function enableHotCompile(scriptSourceDirectory:String):Void {
@@ -93,15 +93,21 @@ class ScriptLoader {
 			return programBasePath;
 		}
 	 */
+
+	/**
+	 * createScriptWatcher()
+	 * Sets up a file watcher for the script file (.cppia) and calls the onChanged callback when the file changes
+	 * @param scriptDirectory : The root directory of the scripts (.cppia)
+	 * @param scriptName : The script (class) to watch.  e.g., "Test" or "mypackage.Test"
+	 * @param onChanged : The callback to call when the file changes. String->Void
+	 */
 	private static function createScriptWatcher(scriptDirectory:String, scriptName:String, onChanged:String->Void) {
-		if (!hotReloadEnabled) {
+		if (!scriptWatcherEnabled) {
 			Log.warn("Hot reload not enabled");
 			return;
 		}
 		#if (sys && scriptable)
-		//
-		// Create a FileWatcher to monitor the script file (the .cppia file)
-		//
+		
 		// var scriptCppiaPath = Path.join([scriptDirectory, scriptName]); // programBasePath + "/" + scriptDirectory;
 		// scriptCppiaPath = Path.normalize(scriptCppiaPath);
 
@@ -122,7 +128,7 @@ class ScriptLoader {
 
 		scriptDirectory = Path.normalize(scriptDirectory);
 
-		Log.info("Path for compiled script files(.cppia) files is: " + scriptSourceDirectory);
+		Log.info("Path for compiled script files(.cppia) files is: " + scriptDirectory);
 
 
 		// remove any existing cppia file watchers
@@ -153,8 +159,6 @@ class ScriptLoader {
 			//scriptCppiaPath = Path.normalize(scriptCppiaPath);
 
 		var cppiaFileWatcher = new FileWatcher(scriptCppiaPath, scriptCppiaFileFilter, (filename:String, event:FileEvent) -> {
-			// wait for the file to be closed
-			// Timer.delay(function() {
 
 			// if (filename != scriptCppiaFile) {
 			//	Log.warn("Script file different path than expected!: " + filename + " != " + scriptCppiaFile);
@@ -182,7 +186,7 @@ class ScriptLoader {
 		cppiaFileWatcher.start();
 		cppiaFileWatchers.set(scriptName, cppiaFileWatcher);
 		#else
-		Log.warn("ScriptWatcher not enabled, requires sys and -D scriptable");
+		Log.warn("ScriptWatcher not enabled, requires sys, -D scriptable, and enableScriptWatcher()");
 		#end
 	}
 
@@ -430,7 +434,7 @@ class ScriptLoader {
 
 		// Watch for changes to the cppia file (the compiled script).
 		// If it changes, reload the script.
-		if (hotReloadEnabled) {
+		if (scriptWatcherEnabled) {
 			createScriptWatcher(scriptDirectory, scriptName, (filename:String) -> {
 				Log.info("Reloading script file: " + filename);
 
