@@ -42,7 +42,7 @@
 --cmd cp out/scripttest/ScriptTest dist/scripttest/ScriptTest
 
 # create a scripts directory, in case it doesn't exist
---cmd mkdir -p dist/scripts
+--cmd mkdir -p dist/scripttest/scripts
 
 
 --cmd echo ""

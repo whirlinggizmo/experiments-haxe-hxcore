@@ -2,7 +2,7 @@
 --run hxcore.scripting.ScriptCompiler
 --target cppia
 --sourceDir scripts
---outputDir dist/scripts
+--outputDir dist/scripttest/scripts
 
 # JIT is enabled for cppia by default (except for emscripten targets)
 #-D CPPIA_NO_JIT

@@ -8,6 +8,8 @@ import hxcore.events.EventEmitter.EventListener;
 import hxcore.logging.Log;
 import hxcore.scripting.ScriptContext;
 import hxcore.scripting.ScriptHost;
+import hxcore.util.PathUtils;
+import haxe.io.Path;
 
 /**
  * Base class for scripts
@@ -25,24 +27,19 @@ class Script {
 	// instance variables that need to be set by the script's controller
 	public var host:IScriptHost;
 	public var ctx:ScriptContext;
-	//public var app:Dynamic;  // TODO:  Interface for IApp?
 
-	//@:allow(hxcore.scripting.ScriptLoader)
 	public var scriptName:String = "SCRIPT"; // replaced by the ScriptLoader when it loads the script
-	//@:allow(hxcore.scripting.ScriptLoader)
 	public var scriptDirectory:String = ""; // replaced by the ScriptLoader when it loads the script
 
-	public inline function log(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String) {
-		/*
-		var p:haxe.PosInfos = {
-			fileName: scriptDirectory + '/' + pos.fileName,
-			lineNumber: pos?.lineNumber ?? 0,
-			customParams: pos?.customParams ?? null,
-			methodName: pos?.methodName ?? "",
-			className: pos?.className ?? scriptName
-		};
-		*/
-		Log.log(s, pos, (tag == null ? 'SCRIPT: ${scriptName}' : tag));
+	public inline function log(s:Dynamic, ?tag:String,?pos:haxe.PosInfos) {
+		// haxe doesn't set the pos.fileName between calls if it hasn't changed, so we can't just prepend the script directory or it will continue to grow
+		// so, we check to see if the pos.fileName starts with the script directory, and if it doesn't, we add it
+		if (pos != null && pos.fileName != null && !StringTools.startsWith(pos.fileName, scriptDirectory)) {
+			pos.fileName = scriptDirectory + '/' + pos.fileName;			
+		}
+		//Log.log(s, pos, (tag == null ? 'SCRIPT: ${scriptName}' : tag));
+		Log.log(s, pos, (tag != null ? '[$tag]' : ''));
+		
 	}
 	
 	public function addEventListener(eventName:String, callback:EventListener):Void {

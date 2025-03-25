@@ -1,13 +1,11 @@
 package hxcore.logging;
 
 import haxe.io.Path;
-
 #if js
 import js.Syntax;
 #end
 
-
- enum abstract LogLevel(Int) from Int to Int {
+enum abstract LogLevel(Int) from Int to Int {
 	var Debug = 10;
 	var Info = 20;
 	var Warning = 30;
@@ -27,36 +25,43 @@ import js.Syntax;
 	}
 
 	public function format(s:String, color:Bool = true, ?pos:haxe.PosInfos, ?tag:String):String {
-
-		if (Log.writeRawOutput) return '$s'; // no brackets/info/line, etd
+		if (Log.writeRawOutput)
+			return '$s'; // no brackets/info/line, etd
 
 		var d = Date.now().toString();
 		// rjk removed date, it was getting in the way
 		d = '';
 
-		var p = StringTools.lpad(pos.fileName, " ", longest) + ":" + StringTools.lpad(Std.string(pos.lineNumber), " ", 4) + ":";
-
-		// rjk changed the position layout so vscode will see it as a link
-		p = pos.fileName + ":" + pos.lineNumber;
-
-		if (!Path.isAbsolute(pos.fileName)) {
-			p = "./" + p;
+		var p = '';
+		if (pos != null && pos.fileName != null) {
+		
 		}
-
 		// level from the enum
 		var l = toString();
 
 		// previous format
 		// fmt = '$d $p  $l: $s';
 
+		var fmt:String;
 		#if js
-		var fmt = '[' + (tag != null ? tag : '$l') + ']: $s';
+		fmt = (tag != null ? tag : '[ $l ]') + ': $s';
 		#else
-		var fmt = '[' + (tag != null ? tag : '$l') + '] [$p]: $s';
+		if (pos != null && pos.fileName != null) {
+			var p = StringTools.lpad(pos.fileName, " ", longest) + ":" + StringTools.lpad(Std.string(pos.lineNumber), " ", 4) + ":";
+			// rjk changed the position layout so vscode will see it as a link
+			p = pos.fileName + ":" + pos.lineNumber;
+			if (!Path.isAbsolute(pos.fileName)) {
+				p = "./" + p;
+			}
+			fmt = (tag != null ? tag : '[ $l ] ') + '[$p]' + ': $s';
+			if (pos.fileName.length > longest) {
+				longest = pos.fileName.length;
+			}
+		} else {
+			fmt = (tag != null ? tag : '[ $l ]') + ': $s';
+		}
 
 		var colorize = color && Sys.systemName() != "Windows";
-		if (pos.fileName.length > longest)
-			longest = pos.fileName.length;
 
 		if (color) {
 			return switch (this) {
@@ -71,11 +76,9 @@ import js.Syntax;
 		}
 		#end
 
-
 		return fmt;
 	}
 }
-
 
 class Log {
 	private static var isInitialized:Bool = false;
@@ -85,14 +88,16 @@ class Log {
 	private static var writeRawOutput:Bool = false;
 
 	public static var rawOutput(get, set):Bool;
+
 	public static function get_rawOutput():Bool {
 		return writeRawOutput;
 	}
+
 	public static function set_rawOutput(value:Bool):Bool {
 		writeRawOutput = value;
 		return writeRawOutput;
 	}
-		
+
 	private static function initialize():Void {
 		if (!isInitialized) {
 			isInitialized = true;
@@ -111,7 +116,7 @@ class Log {
 		}
 
 		// #if (hxp_debug && !(hxp_no_log))
-		//var minLevel = #if (hxp_loglevel == 'info') Info #elseif (hxp_loglevel == 'warning') Warning #elseif (hxp_loglevel == 'error') Error #elseif (hxp_loglevel == 'critical') Critical #else Debug #end;
+		// var minLevel = #if (hxp_loglevel == 'info') Info #elseif (hxp_loglevel == 'warning') Warning #elseif (hxp_loglevel == 'error') Error #elseif (hxp_loglevel == 'critical') Critical #else Debug #end;
 		if (Std.int(level) >= Std.int(minLevel)) {
 			#if neko
 			var p:haxe.PosInfos = {
@@ -139,7 +144,7 @@ class Log {
 					Syntax.code("console.error('%c' + {0}, 'color: #E91E63; font-weight: bold; font-size: 1.1em')", [msg]);
 			}
 			#else
-			//haxe.Log.trace(level.format(Std.string(s), true, pos, tag), p);
+			// haxe.Log.trace(level.format(Std.string(s), true, pos, tag), p);
 			Sys.println(level.format(Std.string(s), true, pos, tag));
 			#end
 			#if !macro
@@ -150,7 +155,6 @@ class Log {
 		}
 		// #end
 	}
-		
 
 	public static inline function debug(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String)
 		write(s, LogLevel.Debug, pos, tag);
@@ -161,25 +165,23 @@ class Log {
 	public static inline function warn(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String)
 		write(s, LogLevel.Warning, pos, tag);
 
-	public static inline function error(s:Dynamic, ?pos:haxe.PosInfos,	?tag:String)
+	public static inline function error(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String)
 		write(s, LogLevel.Error, pos, tag);
 
 	public static inline function fatal(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String)
 		write(s, LogLevel.Fatal, pos, tag);
 
-	public static inline function log(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String) 
+	public static inline function log(s:Dynamic, ?pos:haxe.PosInfos, ?tag:String)
 		write(s, LogLevel.Info, pos, (tag == null ? "LOG" : tag));
 
 	public static function setLevel(level:LogLevel):Void {
 		minLevel = level;
 	}
 
-	
 	public static function getLevel():LogLevel {
 		return minLevel;
 	}
 
-	public static inline function isMinimalOutput():Bool 
+	public static inline function isMinimalOutput():Bool
 		return writeRawOutput;
-
 }

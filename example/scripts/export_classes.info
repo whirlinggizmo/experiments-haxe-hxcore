@@ -58,6 +58,7 @@ class hxcpp.debug.jsonrpc._Protocol.NotificationMethod_Impl_
 class hxcpp.debug.jsonrpc._Protocol.RequestMethod_Impl_
 class hxcpp.debug.jsonrpc.Macro
 class hxcore.util.TypeUtils
+class hxcore.util.PathUtils
 class hxcore.scripting.ScriptLoader
 class hxcore.scripting.ScriptHost
 interface hxcore.scripting.IScriptHost
@@ -370,6 +371,7 @@ file hxcore/scripting/Script.hx /home/rknopf/projects/whirlinggizmo/experiments/
 file hxcore/scripting/ScriptCompiler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptCompiler.hx
 file hxcore/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptHost.hx
 file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/example/hxcore/scripting/ScriptLoader.cpp.hx
+file hxcore/util/PathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/PathUtils.hx
 file hxcore/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/TypeUtils.hx
 file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/.vscode/extensions/vshaxe.hxcpp-debugger-1.2.4/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx
 file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/.vscode/extensions/vshaxe.hxcpp-debugger-1.2.4/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx

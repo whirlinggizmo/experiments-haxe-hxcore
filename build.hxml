@@ -7,7 +7,7 @@ build.scripttest.hxml
 
 # build the Test script
 -lib hxcore
---macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripttest/scripts', 'cppia', [], 'Test')
 --next
 
 # build the lib for giggles
@@ -22,7 +22,7 @@ build.scripttest.hxml
 # TODO: Not tested in anything other than linux.  
 --cwd ./dist/scripttest
 --cmd echo "Running ScriptTest..."
---cmd ./ScriptTest --sourceDir ../../scripts --scriptDir ../scripts
+--cmd ./ScriptTest --sourceDir ../../scripts --scriptDir ./scripts
 
 # ...or don't include the source directory and the hot compile won't be enabled
 #--cmd ./dist/scripttest/ScriptTest -scriptDir scripts
