@@ -108,10 +108,6 @@ class ScriptLoader {
 		}
 		#if (sys && scriptable)
 		
-		// var scriptCppiaPath = Path.join([scriptDirectory, scriptName]); // programBasePath + "/" + scriptDirectory;
-		// scriptCppiaPath = Path.normalize(scriptCppiaPath);
-
-		
 		if (scriptName.length == 0) {
 			Log.warn("No script name specified");
 			return;

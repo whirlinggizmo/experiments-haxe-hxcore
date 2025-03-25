@@ -1,0 +1,51 @@
+
+
+# generate the list of all script files
+#--cmd echo -n "Building scripts list... "
+#--next
+#--macro core.macros.ScriptCompiler.generateScriptsList('scripts', 'gen/scripts.hxml')
+#--cmd echo "OK"
+
+#--next
+#--cmd echo "Building .cpp target (with cppia support)...\n"
+#--next
+
+-lib hxcore
+-cp src
+-cpp out/scripttest
+
+# enable cppia
+-D scriptable 
+
+# JIT is enabled by default for cppia (disable for emscripten targets)
+#-D CPPIA_NO_JIT
+
+# include the scripts as part of the build
+#gen/scripts.hxml
+
+
+# debugging
+--debug
+# vscode debugger
+-lib hxcpp-debug-server
+--dce no
+
+--define HAXE_OUTPUT_FILE=ScriptTest
+--main ScriptTest
+
+# move the generated export_classes.info to the scripts directory
+--cmd mkdir -p scripts
+--cmd mv export_classes.info scripts/export_classes.info
+
+# copy the executable to the dist directory
+--cmd mkdir -p dist/scripttest
+--cmd cp out/scripttest/ScriptTest dist/scripttest/ScriptTest
+
+# create a scripts directory, in case it doesn't exist
+--cmd mkdir -p dist/scripts
+
+
+--cmd echo ""
+--cmd echo "Build complete."
+
+
