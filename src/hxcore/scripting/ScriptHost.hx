@@ -147,7 +147,7 @@ class ScriptHost implements IScriptHost {
 				if (onLoadedCallback != null) {
 					onLoadedCallback(this);
 				}
-				Log.debug("scriptLoaded: " + scriptLoaded);
+				//Log.debug("scriptLoaded: " + scriptLoaded);
 
 			} catch (e) {
 				Log.error("Failed to load script: " + scriptName + " " + e.message);
@@ -182,6 +182,7 @@ class ScriptHost implements IScriptHost {
 			Log.warn('Unable to dispatch event ${eventId}: Script not loaded');
 			return;
 		}
+		setScriptEnvironment(); // hmm.. this doesn't seem right
 		this.event.emit(eventId, eventData);
 	}
 
@@ -212,7 +213,7 @@ class ScriptHost implements IScriptHost {
 
 	public function dispose() {
 
-		if (this.script != null) {
+		if (this.script != null && scriptLoaded) {
 			setScriptEnvironment();
 			this.script._baseUnload();
 		}
@@ -222,5 +223,19 @@ class ScriptHost implements IScriptHost {
 		this.ctx = null;
 		this.event = null;
 		this.scriptName = 'unknown';
+	}
+
+	public function update(deltaTimeMS:Float):Void {
+		if (this.script != null && scriptLoaded) {
+			setScriptEnvironment();
+			this.script._baseUpdate(deltaTimeMS);
+		}
+	}
+
+	public function fixedUpdate(frameDurationMS:Float):Void {
+		if (this.script != null && scriptLoaded) {
+			setScriptEnvironment();
+			this.script._baseFixedUpdate(frameDurationMS);
+		}
 	}
 }

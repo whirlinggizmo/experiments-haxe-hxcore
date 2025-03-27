@@ -122,38 +122,22 @@ class Script {
 		this.onReload();
 	}
 
-	// The base destroy method, which calls the script's destroy if it exists
-	/*
-		public function _baseDestroy():Void {
-			// Check if the script class has its own onDestroy method and call it if it exists
-			// var destroyMethod = Reflect.field(this, "onDestroy");
-			if (this.scriptOnDestroy != null) {
-				// Reflect.callMethod(this, destroyMethod, [ctx]);
-				this.scriptOnDestroy();
-			} else {
-				// Default behavior if no custom onDestroy exists
-				Log.debug("No custom onDestroy defined for this script.");
-			}
-		}
-	 */
-	// The base update method, which calls the script's update if it exists
-	/*
-		public function _baseUpdate(deltaTimeMS:Float):Void {
-			// Check if the script class has its own onUpdate method and call it if it exists
-			// var updateMethod = Reflect.field(this, "onUpdate");
-			if (this.scriptOnUpdate != null) {
-				// Reflect.callMethod(this, destroyMethod, [ctx]);
-				this.scriptOnUpdate(deltaTimeMS);
-			} else {
-				// Default behavior if no custom onUpdate exists
-				Log.debug("No custom onUpdate defined for this script.");
-			}
-		}
-	 */
+	public function _baseUpdate(deltaTimeMS:Float):Void {
+		this.onUpdate(deltaTimeMS);
+	}
+
+	public function _baseFixedUpdate(frameDurationMS:Float):Void {
+		this.onFixedUpdate(frameDurationMS);
+	}
+
 	// overrides for derived classes
 	public function onLoad():Void {}
 
 	public function onUnload():Void {}
 
 	public function onReload():Void {}
+
+	public function onUpdate(deltaTimeMS:Float):Void {}
+
+	public function onFixedUpdate(deltaTimeMS:Float):Void {}
 }

@@ -8,15 +8,17 @@
             "name": "HXCPP",
             "type": "hxcpp",
             "request": "launch",
-            "program": "${workspaceFolder}/example/dist/scripttest/ScriptTest",
-
+            
             // grrr!  hxcpp debugger for vscode doesn't allow specifying a working directory, nor args
+            //"program": "${workspaceFolder}/example/dist/scripttest/ScriptTest",
             // "cwd": "${workspaceFolder}/example/out/scripttest",
-             "args": [
-                "--rootDir", "${workspaceFolder}/example",
-                "--sourceDir", "${workspaceFolder}/example/scripts",
-                "--scriptDir", "${workspaceFolder}/example/dist/scripts"
-             ]
+            // "args": [
+            //    "--rootDir", "${workspaceFolder}/example",
+            //    "--sourceDir", "${workspaceFolder}/example/scripts",
+            //    "--scriptDir", "${workspaceFolder}/example/dist/scripts"
+            // ]
+            // so instead, we use a shell script to launch it:
+            "program": "${workspaceFolder}/example/launch_scripttest.sh",
         }
     ]
 }

@@ -9,7 +9,7 @@ import hxcore.logging.Log;
 @:export
 @:keep
 class Entity {
-	private var scripts:Map<String, ScriptHost> = new Map(); // Holds loaded scripts by name
+	private var scriptHosts:Map<String, ScriptHost> = new Map(); // Holds loaded scripts by name
 
 	// public var event(default, null):EventEmitter = new EventEmitter(); // Manages events
 	public var ctx = {}; // ScriptContext.create(); // Holds script context
@@ -40,10 +40,10 @@ class Entity {
 	 * @param scriptName The name of the script to attach.
 	 */
 	public function attachScript(scriptName:String, ?onCreatedCallback:ScriptHost->Void, ?onLoadedCallback:ScriptHost->Void):Void {
-		if (scripts.exists(scriptName)) {
+		if (scriptHosts.exists(scriptName)) {
 			Log.warn("Script " + scriptName + " already attached to entity " + this.id);
 			if (onLoadedCallback != null) {
-				onLoadedCallback(scripts.get(scriptName));
+				onLoadedCallback(scriptHosts.get(scriptName));
 			}
 			return;
 		}
@@ -55,7 +55,7 @@ class Entity {
 				if (instance != null) {
 					// Log.debug('in attachScript.created callback');
 					// Store the script instance
-					scripts.set(scriptName, instance);
+					scriptHosts.set(scriptName, instance);
 					Log.debug("Created script: " + scriptName);
 
 					// override the script context with ours?
@@ -101,12 +101,12 @@ class Entity {
 	 * @param scriptName The name of the script to detach.
 	 */
 	public function detachScript(scriptName:String):Void {
-		var scriptHost = scripts.get(scriptName);
+		var scriptHost = scriptHosts.get(scriptName);
 		if (scriptHost != null) {
 			scriptHost.dispose();
 			Log.debug("Detached script: " + scriptName);
 		}
-		scripts.remove(scriptName);
+		scriptHosts.remove(scriptName);
 		Log.debug("Removed script: " + scriptName);
 	}
 
@@ -118,7 +118,7 @@ class Entity {
 	 * @param args Arguments to pass to the method.
 	 */
 	public function invoke(scriptName:String, functionName:String, args:Array<Dynamic>):Dynamic {
-		var scriptHost = scripts.get(scriptName);
+		var scriptHost = scriptHosts.get(scriptName);
 		if (scriptHost != null) {
 			// var method = Reflect.field(scriptHost, functionName);
 			// if (method != null) {
@@ -135,14 +135,26 @@ class Entity {
 
 	public function dispose():Void {
 		// Detach all scripts
-		for (scriptName in scripts.keys()) {
+		for (scriptName in scriptHosts.keys()) {
 			detachScript(scriptName);
 		}
 	}
 
 	public function dispatchEvent(eventName:String, ?data:Dynamic):Void {
-		for (script in scripts) {
-			script.dispatchEvent(eventName, data);
+		for (scriptHost in scriptHosts) {
+			scriptHost.dispatchEvent(eventName, data);
+		}
+	}
+
+	public function update(deltaTimeMS:Float):Void {
+		for (scriptHost in scriptHosts) {
+			scriptHost.update(deltaTimeMS);
+		}
+	}
+
+	public function fixedUpdate(deltaTimeMS:Float):Void {
+		for (scriptHost in scriptHosts) {
+			scriptHost.fixedUpdate(deltaTimeMS);
 		}
 	}
 }

@@ -12,9 +12,7 @@ import sys.io.Process;
 // haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName Test --target cppia --outputDir bin/cppia/scripts
 @:keep
 class ScriptCompiler {
-
 	public static function findHaxeExecutable():Null<String> {
-
 		final cmd = 'haxe';
 		var lookupCmd = switch (Sys.systemName()) {
 			case "Windows": "where";
@@ -24,8 +22,11 @@ class ScriptCompiler {
 		function isValidHaxePath(haxeExePath:String):Bool {
 			try {
 				// try to run haxe with '--version' to verify it works
+				// Note: we use process instead of command so the results don't get displayed
 				final process = new Process(haxeExePath, ['--version']);
-				return process.exitCode() == 0;
+				final exitCode = process.exitCode();
+				process.close();
+				return exitCode == 0;
 			} catch (e) {
 				return false;
 			}
@@ -34,12 +35,14 @@ class ScriptCompiler {
 		// check for environment variable HAXEPATH first
 		var path = Sys.getEnv("HAXEPATH");
 		if (path != null) {
-			//Log.info("Found environment variable HAXEPATH: " + path);
+			// Log.info("Found environment variable HAXEPATH: " + path);
 			var haxePath = Path.join([path, cmd]);
 			if (isValidHaxePath(haxePath)) {
 				return haxePath;
 			}
-			Log.warn('Unable to find $cmd in HAXEPATH: $path, falling back to $lookupCmd...');
+			Log.warn('Unable to find "$cmd" in HAXEPATH: "$path", falling back to "$lookupCmd"...');
+			Log.warn('HAXEPATH: ' + path);
+			Log.warn('Attempted bin path: ' + haxePath);
 		}
 
 		// try using which/where lookup (depending on the platform)
@@ -67,13 +70,6 @@ class ScriptCompiler {
 		}
 		if (outputDir == null) {
 			Log.error("Please specify an output directory.");
-			return -1;
-		}
-
-		var cmd = findHaxeExecutable();
-
-		if (cmd == null) {
-			Log.error("Unable to find haxe executable");
 			return -1;
 		}
 
@@ -107,13 +103,18 @@ class ScriptCompiler {
 		var classPath = new Path(classNameAsPath);
 		var packagePath = classPath.dir ?? "";
 		var outputFileName = classPath.file + '.' + target;
-		var outputFileDir = Path.join([ outputDir, packagePath]);
+		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
-		var hxFilePath = Path.join([ sourceDir, classNameAsPath + ".hx"]);
+		var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
 
-		Log.debug('Compiling class: ${className}');
-		Log.debug("Source file: " + hxFilePath);
-		Log.debug("Output file: " + outputFilePath);
+		//Log.debug('Compiling class: ${className}');
+		//Log.debug("Source file: " + hxFilePath);
+		//Log.debug("Output file: " + outputFilePath);
+
+		// delete the existing output file so the user doesn't think it succeeded?
+		if (FileSystem.exists(outputFilePath)) {
+			FileSystem.deleteFile(outputFilePath);
+		}
 
 		// ensure the source path is a valid haxe file
 		if (!FileSystem.exists(hxFilePath)) {
@@ -126,8 +127,8 @@ class ScriptCompiler {
 			FileSystem.createDirectory(outputFileDir);
 		}
 
-		//trace("rootDir: " + rootDir);
-		//trace("sourceDir: " + sourceDir);
+		// trace("rootDir: " + rootDir);
+		// trace("sourceDir: " + sourceDir);
 
 		/*
 			var defines = Context.getDefines();
@@ -155,7 +156,7 @@ class ScriptCompiler {
 			Log.error("Class info file not found: " + classInfoFile);
 			return -1;
 		} else {
-			//Log.info("Class info file found: " + classInfoFile);
+			// Log.info("Class info file found: " + classInfoFile);
 		}
 
 		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classInfoFile'];
@@ -181,18 +182,37 @@ class ScriptCompiler {
 		// add the class name
 		args.push('${className}');
 
-		Log.debug("Command: " + cmd);
-		Log.debug("Args: " + args);
+		var returnCode = -1;
 
-		var result = Sys.command(cmd, args);
-		if (result != 0) {
-			Log.error("Failed to compile class: " + className);
-			return result;
+		try {
+			var cmd = findHaxeExecutable();
+
+			if (cmd == null) {
+				Log.error("Unable to find haxe executable");
+				return -1;
+			}
+
+			//Log.debug("Command: " + cmd);
+			//Log.debug("Args: " + args);
+
+			// try to compile the script
+			final process = new Process(cmd, args);
+			var stdout = process.stdout.readAll().toString();
+			var stderr = process.stderr.readAll().toString();
+			returnCode = process.exitCode();
+			process.close();
+			if (returnCode != 0) {
+				Log.error('Failed to compile class: $className\n$stderr');
+				return returnCode;
+			}
+		} catch (e) {
+			Log.error('Failed to compile class: $className\n${e.message}');
+			return -1;
 		}
 
-		//Log.info('Compiled class: ${className}');
+		// Log.info('Compiled class: ${className}');
 
-		return result;
+		return 0;
 	}
 
 	static var ignoredFiles = ["import.hx"];
@@ -366,9 +386,9 @@ class ScriptCompiler {
 		Log.debug("ScriptCompiler starting");
 		Log.rawOutput = true;
 		// This is the path of this file?
-		//var rootDir = FileSystem.fullPath(Sys.programPath());
-		//rootDir = Path.directory(rootDir);
-		
+		// var rootDir = FileSystem.fullPath(Sys.programPath());
+		// rootDir = Path.directory(rootDir);
+
 		var rootDir = Sys.getCwd();
 
 		var sourceDirectory = "scripts";
@@ -379,7 +399,7 @@ class ScriptCompiler {
 		var args = Sys.args();
 		args = trimArgs(args);
 
-		//trace("Arguments: " + args);
+		// trace("Arguments: " + args);
 
 		var i = args.length - 1; // Start at the end so we don't cause problems when we remove arguments
 
@@ -430,11 +450,11 @@ class ScriptCompiler {
 			i--;
 		}
 
-		//trace("Source directory: " + sourceDirectory);
-		//trace("Output directory: " + outputDirectory);
-		//trace("Target: " + target);
+		// trace("Source directory: " + sourceDirectory);
+		// trace("Output directory: " + outputDirectory);
+		// trace("Target: " + target);
 
-		//trace("Class names: " + classNames);
+		// trace("Class names: " + classNames);
 
 		if (classNames.length == 0) {
 			Log.error("Please specify a class/script name (e.g. [--className | -class | -c | --script] MyScript). The class name (including package) is relative to the [--sourceDir | -src] directory (e.g. MyScript or mygame.MyScript).");

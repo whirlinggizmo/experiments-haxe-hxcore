@@ -1,0 +1,46 @@
+-cp src/hx
+-cp ../../src
+-dce std
+
+--debug
+# vscode debugger 
+#-lib hxcpp-debug-server
+
+
+-cpp out/lib
+-D static_link
+--main API
+-D HAXE_OUTPUT_FILE=libhxcore
+-D HaxeCBridge.name=hxcore
+
+# enable cppia scripting...
+-D scriptable 
+# ...or bake the scripts into the binary
+#-cp scripts
+#Test
+
+--cmd mkdir -p dist/lib
+--cmd cp out/lib/libhxcore.a dist/lib/libhxcore.a
+--cmd cp out/lib/hxcore.h dist/lib/hxcore.h
+--next
+
+# move the generated export_classes.info to the script source directory
+--cmd mkdir -p scripts
+--cmd mv export_classes.info scripts/export_classes.info
+--next
+
+# compile the test script to cppia
+-lib hxcore
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/app/scripts', 'cppia', [], 'Test')
+--next
+
+# create the c app
+--cmd make -f Makefile clean
+--cmd make -f Makefile 
+--next
+
+
+# just tidying up
+#--cmd rm export_classes.info
+
+

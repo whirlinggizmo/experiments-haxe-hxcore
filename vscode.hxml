@@ -1,0 +1,6 @@
+--library hxcore
+-cp src
+-cp examples/clib/src/hx
+-cp examples/scripttest/src
+
+--no-output
