@@ -16,6 +16,10 @@
 
 # enable cppia
 -D scriptable 
+-D HXCPP_M64
+-D HXCPP_CATCH_SEGV
+-D hxcpp_smart_strings
+#-D dll_export=
 
 # include the scripts as part of the build
 #gen/scripts.hxml
@@ -28,13 +32,19 @@
 
 --define HAXE_OUTPUT_FILE=ScriptTest
 --main ScriptTest
+-cp scripts
+#Test
+
+
 
 # move the generated export_classes.info to the script source directory
 --cmd mkdir -p scripts
 --cmd mv export_classes.info scripts/export_classes.info
 
+
 # copy the executable to the dist directory
 --cmd mkdir -p dist
+--cmd pkill -9 ScriptTest || true
 --cmd cp out/ScriptTest dist/ScriptTest
 
 # create a scripts directory, in case it doesn't exist

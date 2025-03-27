@@ -12,27 +12,37 @@ import hxcore.logging.Log;
 class ScriptTest {
 	private var quitFlag:Bool = false;
 
-	public function new(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableScriptWatcher:Bool = false) {
+	public function new() {}
+
+	public function init(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableHotReload:Bool = false) {
 		Log.info('Hello, World!');
 
-		#if scriptable
-		if (scriptDirectory != null && scriptDirectory.length > 0) {
-			ScriptLoader.setScriptDirectory(scriptDirectory);
+		Log.debug('scriptDirectory: ' + scriptDirectory);
+		Log.debug('scriptSourceDirectory: ' + scriptSourceDirectory);
+		Log.debug('enableHotReload: ' + enableHotReload);
 
-			// optionally start the script watcher.  This will watch for changes to .cppia files and reload them.
-			if (enableScriptWatcher) {
-				ScriptLoader.enableScriptWatcher();
+		if (scriptDirectory != null && scriptDirectory.length > 0) {
+			ScriptLoader.enableExternalScripts(scriptDirectory);
+		}
+
+		if (enableHotReload) {
+			if (scriptDirectory == null || scriptDirectory.length == 0) {
+				Log.error('Error: hot reload requires the script directory (for the compiled scripts)');
+				return;
 			}
+			ScriptLoader.enableHotReload();
 		}
 
 		if (scriptSourceDirectory != null && scriptSourceDirectory.length > 0) {
-			// a script source directory was provided, enable the watcher and hot compile
+			if (scriptDirectory == null || scriptDirectory.length == 0) {
+				Log.error('Error: hot compile requires the script directory (for the compiled scripts)');
+				return;
+			}
 			ScriptLoader.enableHotCompile(scriptSourceDirectory);
 		}
-		#end
 	}
 
-	public function init() {
+	public function loadTest() {
 		// Create a new entity
 		var entity = EntityManager.createEntity();
 		if (entity == null) {
@@ -84,35 +94,32 @@ class ScriptTest {
 	}
 
 	/*
-	public function run() {
-		init();
-		var updateHandler = new hxcore.util.UpdateHandler();
-		updateHandler.run({
-			onUpdateCallback: update,
-			updateRateFPS: 60,
-			onFixedUpdateCallback: fixedUpdate,
-			fixedUpdateRateFPS: 24,
-			onQuitCallback: destroy
-		});
-	}
-	*/
-
-
+		public function run() {
+			init();
+			var updateHandler = new hxcore.util.UpdateHandler();
+			updateHandler.run({
+				onUpdateCallback: update,
+				updateRateFPS: 60,
+				onFixedUpdateCallback: fixedUpdate,
+				fixedUpdateRateFPS: 24,
+				onQuitCallback: destroy
+			});
+		}
+	 */
 	static function main() {
 		Log.info('Hello, World!');
-		var scriptDirectory = "";
+		var scriptDirectory = null;
 		var scriptSourceDirectory = null;
-		var enableScriptWatcher = false;
+		var enableHotReload = false;
 
 		function showUsage() {
 			Log.info('Usage: scripttest [options]');
 			Log.info('Options:');
 			Log.info('  --help, -?, -h          Show this help message');
 			Log.info('  --version, -v           Show the version number');
-			Log.info('  --scriptdir,  --scripts, -s <output dir> Set the script directory (.cppia files, "./scripts" by default)');
-			Log.info('  --sourcedir, -srcdir, -src, <source dir> Set the script source directory (.hx source files location.  Setting this will also enable the script compiler watcher)');
-			Log.info('  --watch, --hotreload, --enablescriptwatcher,-w, -hr          Enable the script watcher (disabled by default)');
-			Log.info('  --nowatch, --nohotreload, --disablescriptwatcher,-nw, -nhr    Disable the script watcher');
+			Log.info('  --scriptdir,  --scripts, -s <output dir> Set the script directory (.cppia files).  Setting this will enable external script loading)');
+			Log.info('  --sourcedir, -srcdir, -src, <source dir> Set the script source directory (.hx source files).  Setting this will enable hot compile)');
+			Log.info('  --watch, --hotreload, -w, -hr          Enable the hot reload script watcher');
 			return;
 		}
 
@@ -148,9 +155,7 @@ class ScriptTest {
 					// skip the next arg since we've already processed it
 					currentArgIndex++;
 				case "--watch", "--hotreload", "--enablescriptwatcher", "-w", "-hr":
-					enableScriptWatcher = true;
-				case "--nowatch", "--nohotreload", "--disablescriptwatcher", "-nw", "-nhr":
-					enableScriptWatcher = false;
+					enableHotReload = true;
 				default:
 					Log.error('Error: Unrecognized argument: ${arg}');
 					showUsage();
@@ -160,17 +165,18 @@ class ScriptTest {
 			currentArgIndex++;
 		}
 
+		/*
 		if (scriptDirectory.length == 0) {
 			// check env variable
-			scriptDirectory = Sys.getEnv("SCRIPT_DIR");
+			scriptDirectory = Sys.getEnv("SCRIPTDIR");
 		}
-		if (scriptDirectory.length == 0) {
-			// default to "scripts"
-			scriptDirectory = "scripts";
-		}
-		var scriptTest = new ScriptTest(scriptDirectory, scriptSourceDirectory, enableScriptWatcher);
+		*/
+	
+		var scriptTest = new ScriptTest();
+		scriptTest.init(scriptDirectory, scriptSourceDirectory, enableHotReload);
 
-		scriptTest.init();
+		// run the script test
+		scriptTest.loadTest();
 
 		// start the update loop
 		var updateHandler = new hxcore.util.UpdateHandler();

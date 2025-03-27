@@ -5,4 +5,4 @@
 
 # get the current directory (this shell script's directory)
 currentDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-$currentDir/dist/ScriptTest --rootDir $currentDir/dist --sourceDir ../scripts --scriptDir scripts --enableScriptWatcher
+$currentDir/out/ScriptTest  --sourceDir $currentDir/scripts --scriptDir $currentDir/dist/scripts --hotreload

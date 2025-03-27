@@ -15,22 +15,22 @@ build.hxml
 --next
 
 # build the c app 
---cwd capp
-build.hxml
---next
+#--cwd capp
+#build.hxml
+#--next
 # TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
---cwd ../
---next
+#--cwd ../
+#--next
 
 # Launch the binary
 # Any command line relative paths are relative to the app directory (alternatively, provide absolute paths)
-
 # By including the source directory (--sourceDir), the scripts will be automatically compiled when the .hx file changes
 # Note: This spawns a process that runs haxe to compile the scripts (similar command line as build.script.hxml).  
 # TODO: Not tested in anything other than linux.  
 --cwd scripttest/dist
 --cmd echo "Running ScriptTest..."
---cmd ./ScriptTest --sourceDir ../scripts --scriptDir ./scripts --enableScriptWatcher
 
+--cmd ./ScriptTest --sourceDir ../scripts --scriptDir ./scripts --hotReload
+#--cmd ./ScriptTest 
 # ...or don't include the source directory and the hot compile won't be enabled
 #--cmd ./dist/scripttest/ScriptTest -scriptDir scripts

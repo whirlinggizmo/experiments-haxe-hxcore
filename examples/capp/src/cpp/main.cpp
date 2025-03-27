@@ -15,7 +15,11 @@ int main(int argc, char** argv) {
     // If you need to create an instance and call methods manually, for example:
     HaxeString scriptDir = "scripts";
     HaxeString srcDir = "../../scripts";
-    HaxeObject instance = hxcore_API_new(scriptDir, srcDir, true);
+    HaxeObject instance = hxcore_API_new();
+
+    // set the script and source directories
+    hxcore_API_init(instance, scriptDir, srcDir, true);
+
     hxcore_releaseHaxeString(scriptDir);
     hxcore_releaseHaxeString(srcDir);
 
@@ -24,7 +28,7 @@ int main(int argc, char** argv) {
 
     // we can run the update loop
     hxcore_API_run(instance);
-    sleep(50);
+    sleep(5);
     // ... or pump update() manually
     /*
     bool quitFlag = hxcore_API_update(instance, 0.016); // call update() with a deltaTime value or...

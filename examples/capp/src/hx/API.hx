@@ -11,25 +11,31 @@ import hxcore.util.FPSCounter;
 @:keep
 @:build(HaxeCBridge.expose())
 class API {
-	public function new(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableScriptWatcher:Bool = false) {
+	public function new() {}
+	
+
+	public function init(?scriptDirectory:String = null, ?scriptSourceDirectory:String = null, ?enableHotReload:Bool = false) {
 		Log.info('Hello, World!');
 
-		#if scriptable
 		if (scriptDirectory != null && scriptDirectory.length > 0) {
-			ScriptLoader.setScriptDirectory(scriptDirectory);
-			
-			// optionally start the script watcher.  This will watch for changes to .cppia files and reload them. 
-			if (enableScriptWatcher) {
-				ScriptLoader.enableScriptWatcher();
-			}
+			ScriptLoader.enableExternalScripts(scriptDirectory);
 		}
 
-		if (scriptSourceDirectory != null && scriptSourceDirectory.length > 0 && enableScriptWatcher) {
-			// a script source directory was provided, enable the watcher and hot compile
-			ScriptLoader.enableHotCompile(scriptSourceDirectory);
-		} 
-		#end
+		if (enableHotReload) {
+			if (scriptDirectory == null || scriptDirectory.length == 0) {
+				Log.error('Error: hot reload requires the script directory (for the compiled scripts)');
+				return;
+			}
+			ScriptLoader.enableHotReload();
+		}
 
+		if (scriptSourceDirectory != null && scriptSourceDirectory.length > 0) {
+			if (scriptDirectory == null || scriptDirectory.length == 0) {
+				Log.error('Error: hot compile requires the script directory (for the compiled scripts)');
+				return;
+			}
+			ScriptLoader.enableHotCompile(scriptSourceDirectory);
+		}
 	}
 
 	private var quitFlag:Bool = false;

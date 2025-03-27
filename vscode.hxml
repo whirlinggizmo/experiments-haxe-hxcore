@@ -1,6 +1,8 @@
---library hxcore
+#--library hxcore
 -cp src
--cp examples/clib/src/hx
+-cp examples/capp/src/hx
 -cp examples/scripttest/src
 
+--cpp bin/cpp
+-D scriptable
 --no-output

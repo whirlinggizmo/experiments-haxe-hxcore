@@ -18,7 +18,7 @@
             //    "--scriptDir", "${workspaceFolder}/example/dist/scripts"
             // ]
             // so instead, we use a shell script to launch it:
-            "program": "${workspaceFolder}/examples/scripttest/launch.sh",
+            "program": "${workspaceFolder}/launch.sh",
         }
     ]
 }

@@ -160,9 +160,13 @@ class ScriptCompiler {
 		}
 
 		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classInfoFile'];
+		//var args = ["-cp", sourceDir, "-lib", "hxcore"];
 
 		// disable jit for emscripten
 		if (target == "emscripten") {
+			args.push("-D");
+			args.push("CPPIA_NO_JIT");
+		} else {
 			args.push("-D");
 			args.push("CPPIA_NO_JIT");
 		}
