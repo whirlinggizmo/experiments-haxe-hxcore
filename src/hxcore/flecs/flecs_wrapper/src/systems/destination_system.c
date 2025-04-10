@@ -56,8 +56,8 @@ void DestinationSystem(ecs_iter_t *it)
         }
 
         // Compute scaled velocity
-        float vx = dx / length * d[i].speed;
-        float vy = dy / length * d[i].speed;
+        float vx = dx / length * d[i].speed * it->delta_time;
+        float vy = dy / length * d[i].speed * it->delta_time;
 
         float vel_sq = vx * vx + vy * vy;
 
