@@ -1,7 +1,9 @@
 package hxcore.ecs;
 
+import haxe.Int32;
 
-typedef EntityID = Int; 
+
+typedef EntityID = Int32; 
 
 /**
  * Generates unique EntityIDs for actors and components.

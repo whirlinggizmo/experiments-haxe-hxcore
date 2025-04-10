@@ -293,8 +293,7 @@ class ScriptLoader {
 							module.run(); // calls main() if it exists
 							resolvedClass = module.resolveClass(className);
 							if (resolvedClass == null) {
-								Log.error("Failed to resolve class: " + className);
-								Log.error("Can't replace a built in script with a cppia script?");
+								Log.error("Failed to resolve cppia class module: " + className);
 							}
 						} else {
 							Log.error("Failed to load module (bad data): " + sourceFilePath);
@@ -320,6 +319,7 @@ class ScriptLoader {
 		// If loading from scriptDirectory failed, try to resolve the class type (compiled in)
 		if (resolvedClass == null) {
 			try {
+				Log.debug("Trying to resolve class from built in scripts: " + className);
 				resolvedClass = Type.resolveClass(className);
 				if (resolvedClass == null) {
 					Log.error("Failed to resolve class: " + className);
@@ -382,8 +382,14 @@ class ScriptLoader {
 				module.run(); // call main, if it exists?
 				resolvedClass = module.resolveClass(className);
 				if (resolvedClass == null) {
-					Log.error("Failed to resolve class: " + className);
-					return null;
+					Log.error("Failed to resolve class from cppia module: " + className);
+					Log.info("Trying to load class from built in scripts: " + className);
+					resolvedClass = Type.resolveClass(className);
+					if (resolvedClass == null) {
+						Log.error("Failed to resolve class from built in scripts: " + className);
+						return null;
+					}
+					//return null;
 				}
 			} catch (e) {
 				Log.error("Failed to load module: " + sourceFilePath, "\n" + e.message);
@@ -488,7 +494,7 @@ class ScriptLoader {
 				// var haxeArgs = ["--debug", "-dce", "no", "-lib", "hxcpp-debug-server" ];
 				// var haxeArgs = ["-D", "CPPIA_NO_JIT"];
 
-				var haxeArgs = ["-dce", "full"];
+				var haxeArgs = ["-dce", "full", "-cp", "lib"];
 
 				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, "cppia", haxeArgs, scriptName);
 

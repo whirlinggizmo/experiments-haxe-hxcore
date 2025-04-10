@@ -93,6 +93,7 @@ example/dist
 example/gen
 example/bin
 example/out
+build
 
 # Nuxt.js build / generate output
 .nuxt

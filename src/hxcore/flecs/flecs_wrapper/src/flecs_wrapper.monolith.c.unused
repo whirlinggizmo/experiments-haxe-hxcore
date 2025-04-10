@@ -1,0 +1,916 @@
+// lib/flecs_wrapper/src/flecs_wrapper.monolith.c
+#define FLECS_OBSERVER
+
+#include <stdlib.h>
+#include "flecs.h"
+#include "flecs_wrapper.h"
+
+// components
+#include "components/position.h"
+#include "components/velocity.h"
+#include "components/destination.h"
+
+// systems
+#include "systems/move_system.h"
+#include "systems/destination_system.h"
+
+// just some asserts to ensure our Vector2-like component sizes haven't changed
+_Static_assert(sizeof(Position) == sizeof(float) * 2, "Position must be a vec2 (float x, float y) exactly");
+_Static_assert(sizeof(Velocity) == sizeof(float) * 2, "Velocity must be a vec2 (float x, float y) exactly");
+
+static ecs_world_t *world = NULL;
+
+ECS_COMPONENT_DECLARE(Position);
+ECS_COMPONENT_DECLARE(Velocity);
+ECS_COMPONENT_DECLARE(Destination);
+ECS_COMPONENT_DECLARE(DestinationChanged);
+
+typedef struct CallbackContext
+{
+    ObserverCallback callback;
+    uint32_t callback_id;
+} CallbackContext;
+
+// Lookup tables:
+// we keep lookup tables for entity_ids, component_ids and event_ids
+// so the application can use int32_t ids to refer to entities, components and events
+// We could just mask the lower bits of the actual entity_id to get the entity index,
+// but that would lock us into flecs' implementation details
+
+// entity
+// TODO: Not loving this because we have to preallocate, limiting the number of entities
+#define MAX_ENTITIES 65536
+static ecs_entity_t entity_ecs_id_table[MAX_ENTITIES] = {0};
+static uint32_t entity_ecs_id_count = 1; // reserved index 0 for unknown
+// Hash table: ecs_entity_t -> entity_id
+#define ENTITY_HASH_SIZE MAX_ENTITIES * 2 // 2x MAX_ENTITIES for good load factor
+static ecs_entity_t entity_hash_keys[ENTITY_HASH_SIZE] = {0};
+static int32_t entity_hash_values[ENTITY_HASH_SIZE] = {0};
+
+
+static inline uint32_t hash_entity(ecs_entity_t id)
+{
+    return (uint32_t)(id * 2654435761u) & (ENTITY_HASH_SIZE - 1);
+}
+
+static void entity_hash_insert(ecs_entity_t ecs_id, int32_t entity_id)
+{
+    uint32_t index = hash_entity(ecs_id);
+    while (entity_hash_keys[index] != 0)
+    {
+        index = (index + 1) & (ENTITY_HASH_SIZE - 1);
+    }
+    entity_hash_keys[index] = ecs_id;
+    entity_hash_values[index] = entity_id;
+}
+
+/*
+static int32_t get_entity_id(const ecs_entity_t ecs_id)
+{
+
+    // FIXME:  This is untenable when we have a large number of entities
+
+    for (uint32_t i = 1; i < entity_ecs_id_count; ++i)
+    {
+        if (entity_ecs_id_table[i] == ecs_id)
+        {
+            return i;
+        }
+    }
+    fprintf(stderr, "Unable to get entity_id for ecs_id %lu (not found)\n", ecs_id);
+    return 0;
+}
+*/
+static int32_t get_entity_id(ecs_entity_t ecs_id)
+{
+    uint32_t index = hash_entity(ecs_id);
+    while (entity_hash_keys[index] != 0)
+    {
+        if (entity_hash_keys[index] == ecs_id)
+            return entity_hash_values[index];
+        index = (index + 1) & (ENTITY_HASH_SIZE - 1);
+    }
+    return 0;
+}
+
+/*
+static ecs_entity_t get_entity_ecs_id(uint32_t entity_id)
+{
+    if ((entity_id < 1) || (entity_id >= entity_ecs_id_count))
+    {
+        fprintf(stderr, "Unable to get ecs_id for entity_id %d (out of range 1..%u)\n", entity_id, entity_ecs_id_count - 1);
+        return 0;
+    }
+    return entity_ecs_id_table[entity_id];
+}
+*/
+static ecs_entity_t get_entity_ecs_id(int32_t id)
+{
+    if ((uint32_t)id < entity_ecs_id_count)
+        return entity_ecs_id_table[id];
+    return 0;
+}
+
+static uint32_t set_entity_id(uint32_t entity_id, ecs_entity_t entity_ecs_id)
+{
+    if ((entity_id < 1) || (entity_id >= MAX_ENTITIES))
+    {
+        fprintf(stderr, "Unable to set ecs_id for entity_id, (out of range 1..%u) %u\n", MAX_ENTITIES - 1, entity_id);
+        return 0;
+    }
+    if (entity_ecs_id_table[entity_id] != 0)
+    {
+        fprintf(stderr, "Unable to set ecs_id for entity_id %u, already set (currently %lu)\n", entity_id, entity_ecs_id_table[entity_id]);
+        return 0;
+    }
+    entity_ecs_id_table[entity_id] = entity_ecs_id;
+    // entity_reverse_id_table[entity_ecs_id] = entity_id;
+    return entity_id;
+}
+
+/*
+static uint32_t create_entity(const char *name)
+{
+    if (entity_ecs_id_count >= MAX_ENTITIES)
+    {
+        fprintf(stderr, "Could not create entity (max entities reached: %u)\n", MAX_ENTITIES);
+        return 0;
+    }
+
+    // sanity check, this shouldn't happen
+    if (entity_ecs_id_table[entity_ecs_id_count] != 0)
+    {
+        fprintf(stderr, "The current entity index (%u) is not empty. This shouldn't happen!\n", entity_ecs_id_count);
+        return 0;
+    }
+    ecs_entity_t entity_ecs_id = ecs_entity(world, {.name = name});
+    set_entity_id(entity_ecs_id_count, entity_ecs_id);
+    return entity_ecs_id_count++;
+}
+*/
+
+static uint32_t create_entity(const char *name)
+{
+    if (entity_ecs_id_count >= MAX_ENTITIES)
+    {
+        fprintf(stderr, "Could not create entity (max entities reached: %u)\n", MAX_ENTITIES);
+        return 0;
+    }
+
+    uint32_t id = entity_ecs_id_count;
+
+    // Sanity check
+    if (entity_ecs_id_table[id] != 0)
+    {
+        fprintf(stderr, "The current entity index (%u) is not empty. This shouldn't happen!\n", id);
+        return 0;
+    }
+
+    ecs_entity_t entity_ecs_id = ecs_entity(world, {.name = name});
+
+    entity_ecs_id_table[id] = entity_ecs_id;        // forward mapping
+    entity_hash_insert(entity_ecs_id, (int32_t)id); // reverse mapping
+
+    entity_ecs_id_count++;
+    return id;
+}
+
+bool destroy_entity(uint32_t entity_id)
+{
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
+    {
+        fprintf(stderr, "Could not destroy entity_id %u (entity does not exist)\n", entity_id);
+        return false;
+    }
+    ecs_delete(world, entity_ecs_id);
+    entity_ecs_id_table[entity_id] = 0;
+    // minor optimization: if the entity happened to be the last one in our entity_ecs_id_table, we shrink it
+    if (entity_id == entity_ecs_id_count - 1)
+    {
+        entity_ecs_id_count--;
+    }
+    return true;
+}
+
+// component lookups
+
+// components
+typedef struct ComponentInfo
+{
+    ecs_entity_t ecs_id;
+    uint32_t id;
+    char name[32];
+    size_t size;
+} ComponentInfo;
+
+#define MAX_COMPONENTS 256
+#define COMPONENT_HASH_SIZE (MAX_COMPONENTS * 2) // double the size of the hash
+
+static ComponentInfo component_info_table[MAX_COMPONENTS] = {0};
+static uint32_t component_info_count = 1; // reserved index 0 for unknown
+
+static ecs_entity_t component_ecs_id_keys[COMPONENT_HASH_SIZE] = {0};
+static uint32_t component_ecs_id_values[COMPONENT_HASH_SIZE] = {0};
+
+static char component_name_keys[COMPONENT_HASH_SIZE][32] = {{0}};
+static uint32_t component_name_values[COMPONENT_HASH_SIZE] = {0};
+
+static uint32_t hash_u64(uint64_t val)
+{
+    return (uint32_t)(val * 2654435761u);
+}
+
+static uint32_t hash_str(const char *str)
+{
+    // FNV-1a hash for strings
+    uint32_t hash = 2166136261u;
+    while (*str)
+    {
+        hash ^= (uint8_t)(*str++);
+        hash *= 16777619u;
+    }
+    return hash;
+}
+
+static void component_ecs_hash_insert(ecs_entity_t ecs_id, uint32_t id)
+{
+    uint32_t i = hash_u64(ecs_id) & (COMPONENT_HASH_SIZE - 1);
+    while (component_ecs_id_keys[i] != 0)
+    {
+        i = (i + 1) & (COMPONENT_HASH_SIZE - 1);
+    }
+    component_ecs_id_keys[i] = ecs_id;
+    component_ecs_id_values[i] = id;
+}
+
+static void component_name_hash_insert(const char *name, uint32_t id)
+{
+    uint32_t i = hash_str(name) & (COMPONENT_HASH_SIZE - 1);
+    while (component_name_keys[i][0] != '\0')
+    {
+        i = (i + 1) & (COMPONENT_HASH_SIZE - 1);
+    }
+    strncpy(component_name_keys[i], name, 31);
+    component_name_values[i] = id;
+}
+
+static const ComponentInfo *get_component_info(uint32_t component_id)
+{
+    if (component_id == 0 || component_id >= component_info_count)
+    {
+        fprintf(stderr, "Unable to get component_info for component_id %u (out of range 1..%u)\n", component_id, component_info_count - 1);
+        return NULL;
+    }
+    return &component_info_table[component_id];
+}
+
+static const ComponentInfo *get_component_info_by_name(const char *name)
+{
+    if (name == NULL || strlen(name) == 0)
+    {
+        fprintf(stderr, "Unable to get component_info by name (name is empty or null)\n");
+        return NULL;
+    }
+    for (uint32_t i = 1; i < component_info_count; ++i)
+    {
+        if (strcmp(component_info_table[i].name, name) == 0)
+        {
+            return &component_info_table[i];
+        }
+    }
+    fprintf(stderr, "Unable to get component_info for name %s (not found)\n", name);
+    return NULL;
+}
+
+/*
+static int32_t get_component_id(const ecs_entity_t ecs_id)
+{
+    for (uint32_t i = 1; i < component_info_count; ++i)
+    {
+        if (component_info_table[i].ecs_id == ecs_id)
+        {
+            return i;
+        }
+    }
+
+    fprintf(stderr, "Unable to get component_id for ecs_id %lu (not found)\n", ecs_id);
+    return 0;
+}
+    */
+
+    static uint32_t get_component_id(ecs_entity_t ecs_id)
+    {
+        uint32_t i = hash_u64(ecs_id) & (COMPONENT_HASH_SIZE - 1);
+        while (component_ecs_id_keys[i] != 0)
+        {
+            if (component_ecs_id_keys[i] == ecs_id)
+                return component_ecs_id_values[i];
+            i = (i + 1) & (COMPONENT_HASH_SIZE - 1);
+        }
+        fprintf(stderr, "Unable to get component_id for ecs_id %lu (not found)\n", ecs_id);
+        return 0;
+    }
+
+/*
+static int32_t get_component_id_by_name(const char *name)
+{
+    const ComponentInfo *component_info = get_component_info_by_name(name);
+    if (component_info)
+    {
+        return component_info->id;
+    }
+
+    fprintf(stderr, "Unable to get component_id for name %s \n", name);
+    return 0;
+}
+*/
+
+static uint32_t get_component_id_by_name(const char *name)
+{
+    uint32_t i = hash_str(name) & (COMPONENT_HASH_SIZE - 1);
+    while (component_name_keys[i][0] != '\0')
+    {
+        if (strcmp(component_name_keys[i], name) == 0)
+            return component_name_values[i];
+        i = (i + 1) & (COMPONENT_HASH_SIZE - 1);
+    }
+    return 0;
+}
+
+static const ecs_entity_t get_component_ecs_id(uint32_t component_id)
+{
+    if ((component_id < 1) || (component_id >= component_info_count))
+    {
+        fprintf(stderr, "Unable to get ecs_id for component_id %u (out of range 1..%u)\n", component_id, component_info_count - 1);
+        return 0;
+    }
+    return component_info_table[component_id].ecs_id;
+}
+
+static const ecs_entity_t get_component_ecs_id_by_name(const char *name)
+{
+    const ComponentInfo *component_info = get_component_info_by_name(name);
+    if (component_info)
+    {
+        return component_info->ecs_id;
+    }
+
+    fprintf(stderr, "Unable to get component_ecs_id for name %s \n", name);
+
+    return 0;
+}
+
+static void clear_component_info()
+{
+    component_info_count = 1;
+    memset(component_info_table, 0, sizeof(component_info_table));
+    memset(component_ecs_id_keys, 0, sizeof(component_ecs_id_keys));
+    memset(component_ecs_id_values, 0, sizeof(component_ecs_id_values));
+    memset(component_name_keys, 0, sizeof(component_name_keys));
+    memset(component_name_values, 0, sizeof(component_name_values));
+}
+
+// Helper to register components
+//
+/*
+#define REGISTER_COMPONENT(world, Type)                                                             \
+    do                                                                                              \
+    {                                                                                               \
+        if (component_info_count >= MAX_COMPONENTS)                                                 \
+        {                                                                                           \
+            fprintf(stderr, "Unabled to register component: %s (Reached MAX_COMPONENTS)\n", #Type); \
+            break;                                                                                  \
+        }                                                                                           \
+        ECS_COMPONENT_DEFINE(world, Type);                                                          \
+        component_info_table[component_info_count].ecs_id = ecs_id(Type);                           \
+        strcpy(component_info_table[component_info_count].name, #Type);                             \
+        component_info_table[component_info_count].size = sizeof(Type);                             \
+        component_info_table[component_info_count].id = component_info_count;                       \
+        component_info_count++;                                                                     \
+    } while (0)
+*/
+#define REGISTER_COMPONENT(world, Type)                                                                     \
+    do                                                                                                      \
+    {                                                                                                       \
+        if (component_info_count >= MAX_COMPONENTS)                                                         \
+        {                                                                                                   \
+            fprintf(stderr, "Unable to register component: %s (Reached MAX_COMPONENTS)\n", #Type);          \
+            break;                                                                                          \
+        }                                                                                                   \
+        ECS_COMPONENT_DEFINE(world, Type);                                                                  \
+        component_info_table[component_info_count].ecs_id = ecs_id(Type);                                   \
+        strcpy(component_info_table[component_info_count].name, #Type);                                     \
+        component_info_table[component_info_count].size = sizeof(Type);                                     \
+        component_info_table[component_info_count].id = component_info_count;                               \
+        component_ecs_hash_insert(component_info_table[component_info_count].ecs_id, component_info_count); \
+        component_name_hash_insert(#Type, component_info_count);                                            \
+        component_info_count++;                                                                             \
+    } while (0)
+
+// event lookup
+
+// there are fixed number of event types, so we'll just add them directly
+#define event_ecs_id_count 8
+static ecs_entity_t event_ecs_id_table[event_ecs_id_count] = { // lookup table for event_id -> event_ecs_id
+    /*
+    // Reference: Events, taken from flecs world.c  Note that the order matters, since it's used to index into the event_id_table
+    const ecs_entity_t EcsOnAdd =                       FLECS_HI_COMPONENT_ID + 40;
+    const ecs_entity_t EcsOnRemove =                    FLECS_HI_COMPONENT_ID + 41;
+    const ecs_entity_t EcsOnSet =                       FLECS_HI_COMPONENT_ID + 42;
+    const ecs_entity_t EcsOnDelete =                    FLECS_HI_COMPONENT_ID + 43;
+    const ecs_entity_t EcsOnDeleteTarget =              FLECS_HI_COMPONENT_ID + 44;
+    const ecs_entity_t EcsOnTableCreate =               FLECS_HI_COMPONENT_ID + 45;
+    const ecs_entity_t EcsOnTableDelete =               FLECS_HI_COMPONENT_ID + 46;
+    */
+    0,                          // leave starting index 0 empty for unknown
+    FLECS_HI_COMPONENT_ID + 40, // EcsOnAdd
+    FLECS_HI_COMPONENT_ID + 41, // EcsOnRemove
+    FLECS_HI_COMPONENT_ID + 42, // EcsOnSet
+    FLECS_HI_COMPONENT_ID + 43, // EcsOnDelete
+    FLECS_HI_COMPONENT_ID + 44, // EcsOnDeleteTarget
+    FLECS_HI_COMPONENT_ID + 45, // EcsOnTableCreate
+    FLECS_HI_COMPONENT_ID + 46, // EcsOnTableDelete
+};
+
+static uint32_t get_event_id(const ecs_entity_t ecs_id)
+{
+    // We could use something like hash_u64, but with only 8 events, the hashing is probably slower than a linear search
+    for (uint32_t i = 1; i < event_ecs_id_count; ++i)
+    {
+        if (event_ecs_id_table[i] == ecs_id)
+        {
+            return i;
+        }
+    }
+    fprintf(stderr, "Unable to get event_id for ecs_id %lu (not found)\n", ecs_id);
+    return 0;
+}
+ecs_entity_t get_event_ecs_id(uint32_t event_id)
+{
+    if (event_id < 1 || (event_id >= event_ecs_id_count))
+    {
+        fprintf(stderr, "Unable to get ecs_id for event_id %u (out of range 1..%u)\n", event_id, event_ecs_id_count - 1);
+        return 0;
+    }
+    return event_ecs_id_table[event_id];
+}
+
+// observer
+// A simple static callback that is registered with flecs observers.
+static void on_observed_component_changed(ecs_iter_t *it)
+{
+    // printf("Observer callback invoked for %d entities\n", it->count);
+    Position *pos = ecs_field(it, Position, 0);
+    Velocity *vel = ecs_field(it, Velocity, 1);
+    for (int i = 0; i < it->count; i++)
+    {
+        uint32_t entity_id = get_entity_id(it->entities[i]);
+        uint32_t component_id = get_component_id(it->event_id);
+        uint32_t event_id = get_event_id(it->event);
+        /*
+        printf(" - %s: %s (%u): %s\n",
+               ecs_get_name(it->world, it->event),
+               ecs_get_name(it->world, it->event_id),
+               component_id,
+               ecs_get_name(it->world, it->entities[i])
+            );
+        */
+        const CallbackContext *cb_ctx = it->callback_ctx;
+        if (cb_ctx && cb_ctx->callback)
+        {
+            // invoke the callback
+            // printf("Invoking callback %p\n", cb_ctx->callback);
+            cb_ctx->callback(entity_id, component_id, event_id, cb_ctx->callback_id);
+        }
+    }
+}
+
+void free_observer_callback_ctx(void *ctx)
+{
+    CallbackContext *cb_ctx = ctx;
+    if (!cb_ctx)
+        return;
+
+    // val_gc(cb_ctx->callback, false); // pin it?  It's a static function, so no?
+    free(cb_ctx);
+}
+
+// A wrapper function to register an observer
+static bool register_observer(
+    uint32_t *component_ids,
+    uint32_t num_components,
+    uint32_t *event_ids,
+    uint32_t num_events,
+    ObserverCallback callback,
+    uint32_t callback_id)
+{
+    printf("Registering observer for %d components\n", num_components);
+
+    if (num_components >= FLECS_TERM_COUNT_MAX)
+    {
+        printf("Too many terms! Max allowed: %d\n", FLECS_TERM_COUNT_MAX);
+        return false;
+    }
+
+    ecs_observer_desc_t desc = {0};
+    desc.callback = on_observed_component_changed;
+    uint32_t i = 0;
+    for (i = 0; i < num_events; i++)
+    {
+        desc.events[i] = get_event_ecs_id(event_ids[i]);
+        if (desc.events[i] == 0)
+        {
+            fprintf(stderr, "Unabled to register observer (event_id %u not found)\n", event_ids[i]);
+            return false;
+        }
+    }
+    desc.events[i] = 0; // null terminator required
+
+    for (uint32_t i = 0; i < num_components; i++)
+    {
+        const ComponentInfo *component_info = get_component_info(component_ids[i]);
+        if (component_info == NULL)
+        {
+            printf("Unabled to register observer (component_id %u not found)\n", component_ids[i]);
+            return false;
+        }
+        desc.query.terms[i].id = component_info->ecs_id;
+    }
+
+    CallbackContext *callback_ctx = malloc(sizeof(CallbackContext));
+    callback_ctx->callback_id = callback_id;
+    callback_ctx->callback = callback;
+    // val_gc(callback_ctx->callback, true); // pin it?  It's a static function, so no?
+
+    desc.callback_ctx = callback_ctx;
+    desc.callback_ctx_free = free_observer_callback_ctx;
+
+    ecs_entity_t observer = ecs_observer_init(world, &desc);
+
+    if (observer == 0)
+    {
+        fprintf(stderr, "Unable to register observer\n");
+        return false;
+    }
+
+    return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+EXPORT int32_t flecs_component_get_id_by_name(const char *name)
+{
+    if (name == NULL)
+        return 0;
+
+    for (uint32_t i = 1; i < component_info_count; ++i)
+    {
+        if (strcmp(component_info_table[i].name, name) == 0)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+
+EXPORT bool flecs_component_is_mark_changed_by_name(uint32_t entity_index, const char *component_name)
+{
+    int32_t id = get_component_id_by_name(component_name);
+    if (id < 1)
+        return false;
+    ecs_entity_t entity = get_entity_ecs_id(entity_index);
+    if (!entity)
+        return false;
+    ecs_add_id(world, entity, component_info_table[id].ecs_id);
+    return true;
+}
+
+EXPORT bool flecs_component_is_marked_changed(uint32_t entity_index, uint32_t component_id)
+{
+    if (component_id < 1 || component_id >= component_info_count)
+        return false;
+    if (component_info_table[component_id].ecs_id == 0)
+        return false;
+    ecs_entity_t entity = get_entity_ecs_id(entity_index);
+    if (!entity)
+        return false;
+    ecs_add_id(world, entity, component_info_table[component_id].ecs_id);
+    return true;
+}
+
+EXPORT bool flecs_component_is_tag(uint32_t component_id)
+{
+    const ComponentInfo *entry = get_component_info(component_id);
+    return entry && entry->size == 0;
+}
+
+EXPORT void flecs_component_print_registry(void)
+{
+    printf("Registered components (%u):\n", component_info_count - 1);
+    for (uint32_t i = 1; i < component_info_count; ++i)
+    {
+        printf("  [%u] %s (size: %zu)\n", i, component_info_table[i].name, component_info_table[i].size);
+    }
+}
+
+EXPORT void flecs_entity_print_components(uint32_t entity_index)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return;
+    printf("Entity %u has components:\n", entity_index);
+    for (uint32_t i = 1; i < component_info_count; ++i)
+    {
+        if (ecs_has_id(world, entity_id, component_info_table[i].ecs_id))
+        {
+            printf("  [%u] %s\n", i, component_info_table[i].name);
+        }
+    }
+}
+
+EXPORT bool flecs_entity_has_component(uint32_t entity_id, uint32_t component_id)
+{
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
+        return false;
+    const ComponentInfo *component_info = get_component_info(component_id);
+    if (!component_info)
+    {
+        fprintf(stderr, "Unable to get component_info for entity_id %u and component_id %u\n", entity_id, component_id);
+        return false;
+    }
+    return ecs_has_id(world, entity_ecs_id, component_info->ecs_id);
+}
+
+EXPORT bool flecs_entity_has_component_by_name(uint32_t entity_index, const char *component_name)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    const ComponentInfo *entry = get_component_info_by_name(component_name);
+    if (!entry)
+        return false;
+    return ecs_has_id(world, entity_id, entry->ecs_id);
+}
+
+EXPORT bool flecs_entity_add_component(uint32_t entity_index, uint32_t component_id)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    const ComponentInfo *entry = get_component_info(component_id);
+    if (!entry)
+        return false;
+    ecs_add_id(world, entity_id, entry->ecs_id);
+    return true;
+}
+
+EXPORT bool flecs_entity_add_component_by_name(uint32_t entity_index, const char *component_name)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    const ComponentInfo *entry = get_component_info_by_name(component_name);
+    if (!entry)
+        return false;
+    ecs_add_id(world, entity_id, entry->ecs_id);
+    return true;
+}
+
+EXPORT bool flecs_entity_remove_component(uint32_t entity_index, uint32_t component_id)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    const ComponentInfo *entry = get_component_info(component_id);
+    if (!entry)
+        return false;
+    ecs_remove_id(world, entity_id, entry->ecs_id);
+    return true;
+}
+
+EXPORT bool flecs_entity_remove_component_by_name(uint32_t entity_index, const char *component_name)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    const ComponentInfo *entry = get_component_info_by_name(component_name);
+    if (!entry)
+        return false;
+    ecs_remove_id(world, entity_id, entry->ecs_id);
+    return true;
+}
+
+// component helpers
+// TODO:  Move them into their respective component files (i.e. velocity.c, position.c, etc.)
+
+EXPORT bool flecs_entity_get_velocity(uint32_t entity_index, float x, float y)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    ecs_set(world, entity_id, Velocity, {x, y});
+    return true;
+}
+
+EXPORT bool flecs_entity_set_velocity(uint32_t entity_index, float *x, float *y)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+
+    if (!ecs_has(world, entity_id, Velocity))
+    {
+        printf("Entity %u has no velocity component\n", entity_index);
+        return false;
+    }
+
+    const Velocity *vel = ecs_get(world, entity_id, Velocity);
+    *x = vel->x;
+    *y = vel->y;
+    return true;
+}
+
+EXPORT bool flecs_entity_set_position(uint32_t entity_index, float x, float y)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+
+    ecs_set(world, entity_id, Position, {x, y});
+    return true;
+}
+
+EXPORT bool flecs_entity_get_position(uint32_t entity_index, float *x, float *y)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+
+    if (!ecs_has(world, entity_id, Position))
+    {
+        printf("Entity %u has no position component\n", entity_index);
+        return false;
+    }
+
+    const Position *pos = ecs_get(world, entity_id, Position);
+    *x = pos->x;
+    *y = pos->y;
+    return true;
+}
+
+EXPORT bool flecs_entity_set_destination(uint32_t entity_index, float x, float y, float speed)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    ecs_set(world, entity_id, Destination, {x, y, speed});
+    return true;
+}
+
+EXPORT bool flecs_entity_get_destination(uint32_t entity_index, float *x, float *y, float *speed)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+    if (!ecs_has(world, entity_id, Destination))
+    {
+        printf("Entity %u has no destination component\n", entity_index);
+        return false;
+    }
+    const Destination *dest = ecs_get(world, entity_id, Destination);
+    *x = dest->x;
+    *y = dest->y;
+    *speed = dest->speed;
+    return true;
+}
+
+// trying out a generic set component function for components that are vector2 of floats.
+EXPORT bool flecs_entity_set_component_vec2(uint32_t entity_index, uint32_t component_id, float x, float y)
+{
+    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
+    if (entity_id == 0)
+        return false;
+
+    const ComponentInfo *entry = get_component_info(component_id);
+    if (!entry)
+    {
+        fprintf(stderr, "Invalid component ID: %d\n", component_id);
+        return false;
+    }
+
+    void *comp = ecs_get_mut_id(world, entity_id, entry->ecs_id);
+    if (!comp)
+    {
+        fprintf(stderr, "Failed to get component: %s\n", entry->name);
+        return false;
+    }
+
+    if (entry->size != sizeof(float) * 2)
+    {
+        fprintf(stderr, "Component size mismatch: %s\n", entry->name);
+        return false;
+    }
+
+    float *values = (float *)comp;
+    if (values[0] == x && values[1] == y)
+        return true;
+
+    values[0] = x;
+    values[1] = y;
+
+    // be sure to tag it as modified for observers
+    ecs_modified_id(world, entity_id, entry->ecs_id);
+
+    return true;
+}
+
+EXPORT bool flecs_entity_get_component_vec2(uint32_t entity_index, uint32_t component_id, float *x, float *y)
+{
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_index);
+    if (entity_ecs_id == 0)
+        return false;
+
+    const ComponentInfo *component_info = get_component_info(component_id);
+    if (!component_info)
+    {
+        fprintf(stderr, "Invalid component ID: %d\n", component_id);
+        return false;
+    }
+
+    if (!ecs_has_id(world, entity_ecs_id, component_info->ecs_id))
+    {
+        fprintf(stderr, "Entity %u has no %s component\n", entity_index, component_info->name);
+        return false;
+    }
+
+    const void *comp = ecs_get_id(world, entity_ecs_id, component_info->ecs_id);
+    if (!comp)
+    {
+        fprintf(stderr, "Failed to get component: %s\n", component_info->name);
+        return false;
+    }
+
+    if (component_info->size != sizeof(float) * 2)
+    {
+        fprintf(stderr, "Component size mismatch: %s\n", component_info->name);
+        return false;
+    }
+
+    float *values = (float *)comp;
+    *x = values[0];
+    *y = values[1];
+    return true;
+}
+
+EXPORT uint32_t flecs_entity_create(const char *name)
+{
+    return create_entity(name);
+}
+
+EXPORT bool flecs_entity_destroy(uint32_t entity_id)
+{
+    return destroy_entity(entity_id);
+}
+
+EXPORT const char *flecs_version(void)
+{
+    return FLECS_VERSION;
+}
+
+EXPORT bool flecs_register_observer(uint32_t *component_ids, uint32_t num_components, uint32_t *event_ids, uint32_t num_events, ObserverCallback callback, uint32_t callback_id)
+{
+    return register_observer(component_ids, num_components, event_ids, num_events, callback, callback_id);
+}
+
+EXPORT void flecs_init()
+{
+    world = ecs_init();
+
+    REGISTER_COMPONENT(world, Position);
+    REGISTER_COMPONENT(world, Velocity);
+    REGISTER_COMPONENT(world, Destination);
+
+    // set our event_id -> observer event_type.  Since EcsOnAdd, EcsOnRemove, etc are not defines, we have to do it during runtime
+    // we could use the actual value if we were confident that they wouldn't change
+    // see flecs' world.c
+
+    // ECS_COMPONENT_DEFINE(world, Position);
+    // ECS_COMPONENT_DEFINE(world, Velocity);
+    // ECS_COMPONENT_DEFINE(world, Destination);
+
+    ECS_SYSTEM(world, DestinationSystem, EcsOnUpdate, Position, Velocity, Destination);
+
+    ECS_SYSTEM(world, MoveSystem, EcsOnUpdate, Position, Velocity);
+}
+
+EXPORT void flecs_progress(float delta_time)
+{
+    ecs_progress(world, delta_time);
+}
+
+EXPORT void flecs_fini()
+{
+    ecs_fini(world);
+}

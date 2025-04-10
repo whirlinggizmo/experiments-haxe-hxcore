@@ -4,7 +4,6 @@ package hxcore.scripting;
 // import hxcore.app.IApp;
 // import haxe.macro.Type.Ref;
 // import hxcore.util.TypeUtils;
-import hxcore.events.EventEmitter.EventListener;
 import hxcore.events.EventEmitter;
 // import hxcore.events.EventEmitterTracker;
 import hxcore.logging.Log;
