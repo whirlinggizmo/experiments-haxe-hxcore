@@ -49,7 +49,7 @@ $(FLECS_LIB): $(FLECS_OBJ)
 	@echo "Flecs library built: $(FLECS_LIB)"
 
 # Link wrapper .so against static Flecs lib
-# use the flecs.c source directly instead of the library 
+# Note: Weuse the flecs.c source directly instead of first building the flecs library 
 #$(TARGET_DYNAMIC): $(FLECS_LIB) $(WRAPPER_SRC)
 #	$(CC) $(CFLAGS) -I$(WRAPPER_INC_DIR) $(WRAPPER_SRC) -o $(TARGET_DYNAMIC) $(LDFLAGS) $(FLECS_LIB)
 $(TARGET_DYNAMIC): $(WRAPPER_SRC)
@@ -57,7 +57,7 @@ $(TARGET_DYNAMIC): $(WRAPPER_SRC)
 	$(CC) $(CFLAGS) -I$(WRAPPER_INC_DIR) $(WRAPPER_SRC) -o $(TARGET_DYNAMIC) $(LDFLAGS) 
 
 # Create static wrapper library
-# use the flecs.c source directly instead of the generated obj files 
+# Note: We use include flecs.c source directly instead of pre-generating flecs object files 
 #$(TARGET_STATIC): $(FLECS_OBJ) $(WRAPPER_SRC)
 #	mkdir -p $(WRAPPER_BUILD_DIR)
 #	$(foreach src,$(WRAPPER_SRC),$(CC) $(CFLAGS) -I$(WRAPPER_INC_DIR) -c $(src) -o $(WRAPPER_BUILD_DIR)/$(notdir $(basename $(src))).o;)

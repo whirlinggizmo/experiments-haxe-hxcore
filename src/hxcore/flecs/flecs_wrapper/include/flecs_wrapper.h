@@ -5,14 +5,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #define EXPORT __attribute__((visibility("default")))
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
 
     // Observer callback type
     typedef void (*ObserverCallback)(uint32_t entity_id, uint32_t component_id, uint32_t event_id, uint32_t callback_id);
