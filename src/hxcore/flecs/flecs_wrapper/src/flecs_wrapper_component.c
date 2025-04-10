@@ -309,7 +309,7 @@ EXPORT bool flecs_entity_remove_component_by_name(uint32_t entity_id, const char
 // component helpers
 // TODO:  Move them into their respective component files (i.e. velocity.c, position.c, etc.)
 
-EXPORT bool flecs_entity_get_velocity(uint32_t entity_id, float x, float y)
+EXPORT bool flecs_entity_set_velocity(uint32_t entity_id, float x, float y)
 {
     ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
     if (entity_ecs_id == 0)
@@ -318,7 +318,7 @@ EXPORT bool flecs_entity_get_velocity(uint32_t entity_id, float x, float y)
     return true;
 }
 
-EXPORT bool flecs_entity_set_velocity(uint32_t entity_id, float *x, float *y)
+EXPORT bool flecs_entity_get_velocity(uint32_t entity_id, float *x, float *y)
 {
     ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
     if (entity_ecs_id == 0)

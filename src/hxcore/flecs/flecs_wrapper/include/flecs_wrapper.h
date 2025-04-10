@@ -34,8 +34,8 @@ extern "C"
     bool flecs_entity_remove_component_by_name(uint32_t entity_id, const char *component_name);
 
     // Specific component helpers
-    bool flecs_entity_get_velocity(uint32_t entity_id, float x, float y);
-    bool flecs_entity_set_velocity(uint32_t entity_id, float *x, float *y);
+    bool flecs_entity_set_velocity(uint32_t entity_id, float x, float y);
+    bool flecs_entity_get_velocity(uint32_t entity_id, float *x, float *y);
     bool flecs_entity_set_position(uint32_t entity_id, float x, float y);
     bool flecs_entity_get_position(uint32_t entity_id, float *x, float *y);
     bool flecs_entity_set_destination(uint32_t entity_id, float x, float y, float speed);
