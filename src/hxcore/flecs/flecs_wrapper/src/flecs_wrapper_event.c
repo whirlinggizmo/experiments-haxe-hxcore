@@ -8,6 +8,8 @@
 #include "flecs_wrapper_entity.h"
 #include "flecs_wrapper_event.h"
 
+// defined in flecs_wrapper.c 
+extern ecs_world_t *world;
 
 // there are fixed number of event types, so we'll just add them directly
 #define event_ecs_id_count 8

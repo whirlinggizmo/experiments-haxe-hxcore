@@ -5,6 +5,10 @@
 #include "flecs.h"
 #include "flecs_wrapper.h"
 
+// defined in flecs_wrapper.c 
+extern ecs_world_t *world;
+
+
 // components
 #include "components/position.h"
 #include "components/velocity.h"

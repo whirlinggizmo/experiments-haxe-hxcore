@@ -11,6 +11,9 @@
 #include "components/velocity.h"
 #include "components/destination.h"
 
+// defined in flecs_wrapper.c 
+extern ecs_world_t *world;
+
 // just some asserts to ensure our Vector2-like component sizes haven't changed
 _Static_assert(sizeof(Position) == sizeof(float) * 2, "Position must be a vec2 (float x, float y) exactly");
 _Static_assert(sizeof(Velocity) == sizeof(float) * 2, "Velocity must be a vec2 (float x, float y) exactly");
@@ -175,35 +178,35 @@ EXPORT int32_t flecs_component_get_id_by_name(const char *name)
     return 0;
 }
 
-EXPORT bool flecs_component_is_mark_changed_by_name(uint32_t entity_index, const char *component_name)
+EXPORT bool flecs_component_is_mark_changed_by_name(uint32_t entity_id, const char *component_name)
 {
     int32_t id = get_component_id_by_name(component_name);
     if (id < 1)
         return false;
-    ecs_entity_t entity = get_entity_ecs_id(entity_index);
-    if (!entity)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (!entity_ecs_id)
         return false;
-    ecs_add_id(world, entity, component_info_table[id].ecs_id);
+    ecs_add_id(world, entity_ecs_id, component_info_table[id].ecs_id);
     return true;
 }
 
-EXPORT bool flecs_component_is_marked_changed(uint32_t entity_index, uint32_t component_id)
+EXPORT bool flecs_component_is_marked_changed(uint32_t entity_id, uint32_t component_id)
 {
     if (component_id < 1 || component_id >= component_info_count)
         return false;
     if (component_info_table[component_id].ecs_id == 0)
         return false;
-    ecs_entity_t entity = get_entity_ecs_id(entity_index);
-    if (!entity)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (!entity_ecs_id)
         return false;
-    ecs_add_id(world, entity, component_info_table[component_id].ecs_id);
+    ecs_add_id(world, entity_ecs_id, component_info_table[component_id].ecs_id);
     return true;
 }
 
 EXPORT bool flecs_component_is_tag(uint32_t component_id)
 {
-    const ComponentInfo *entry = get_component_info(component_id);
-    return entry && entry->size == 0;
+    const ComponentInfo *component_info = get_component_info(component_id);
+    return component_info && component_info->size == 0;
 }
 
 EXPORT void flecs_component_print_registry(void)
@@ -215,15 +218,15 @@ EXPORT void flecs_component_print_registry(void)
     }
 }
 
-EXPORT void flecs_entity_print_components(uint32_t entity_index)
+EXPORT void flecs_entity_print_components(uint32_t entity_id)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return;
-    printf("Entity %u has components:\n", entity_index);
+    printf("Entity %u has components:\n", entity_id);
     for (uint32_t i = 1; i < component_info_count; ++i)
     {
-        if (ecs_has_id(world, entity_id, component_info_table[i].ecs_id))
+        if (ecs_has_id(world, entity_ecs_id, component_info_table[i].ecs_id))
         {
             printf("  [%u] %s\n", i, component_info_table[i].name);
         }
@@ -244,143 +247,143 @@ EXPORT bool flecs_entity_has_component(uint32_t entity_id, uint32_t component_id
     return ecs_has_id(world, entity_ecs_id, component_info->ecs_id);
 }
 
-EXPORT bool flecs_entity_has_component_by_name(uint32_t entity_index, const char *component_name)
+EXPORT bool flecs_entity_has_component_by_name(uint32_t entity_id, const char *component_name)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    const ComponentInfo *entry = get_component_info_by_name(component_name);
-    if (!entry)
+    const ComponentInfo *component_info = get_component_info_by_name(component_name);
+    if (!component_info)
         return false;
-    return ecs_has_id(world, entity_id, entry->ecs_id);
+    return ecs_has_id(world, entity_ecs_id, component_info->ecs_id);
 }
 
-EXPORT bool flecs_entity_add_component(uint32_t entity_index, uint32_t component_id)
+EXPORT bool flecs_entity_add_component(uint32_t entity_id, uint32_t component_id)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    const ComponentInfo *entry = get_component_info(component_id);
-    if (!entry)
+    const ComponentInfo *component_info = get_component_info(component_id);
+    if (!component_info)
         return false;
-    ecs_add_id(world, entity_id, entry->ecs_id);
+    ecs_add_id(world, entity_ecs_id, component_info->ecs_id);
     return true;
 }
 
-EXPORT bool flecs_entity_add_component_by_name(uint32_t entity_index, const char *component_name)
+EXPORT bool flecs_entity_add_component_by_name(uint32_t entity_id, const char *component_name)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    const ComponentInfo *entry = get_component_info_by_name(component_name);
-    if (!entry)
+    const ComponentInfo *component_info = get_component_info_by_name(component_name);
+    if (!component_info)
         return false;
-    ecs_add_id(world, entity_id, entry->ecs_id);
+    ecs_add_id(world, entity_ecs_id, component_info->ecs_id);
     return true;
 }
 
-EXPORT bool flecs_entity_remove_component(uint32_t entity_index, uint32_t component_id)
+EXPORT bool flecs_entity_remove_component(uint32_t entity_id, uint32_t component_id)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    const ComponentInfo *entry = get_component_info(component_id);
-    if (!entry)
+    const ComponentInfo *component_info = get_component_info(component_id);
+    if (!component_info)
         return false;
-    ecs_remove_id(world, entity_id, entry->ecs_id);
+    ecs_remove_id(world, entity_ecs_id, component_info->ecs_id);
     return true;
 }
 
-EXPORT bool flecs_entity_remove_component_by_name(uint32_t entity_index, const char *component_name)
+EXPORT bool flecs_entity_remove_component_by_name(uint32_t entity_id, const char *component_name)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    const ComponentInfo *entry = get_component_info_by_name(component_name);
-    if (!entry)
+    const ComponentInfo *component_info = get_component_info_by_name(component_name);
+    if (!component_info)
         return false;
-    ecs_remove_id(world, entity_id, entry->ecs_id);
+    ecs_remove_id(world, entity_ecs_id, component_info->ecs_id);
     return true;
 }
 
 // component helpers
 // TODO:  Move them into their respective component files (i.e. velocity.c, position.c, etc.)
 
-EXPORT bool flecs_entity_get_velocity(uint32_t entity_index, float x, float y)
+EXPORT bool flecs_entity_get_velocity(uint32_t entity_id, float x, float y)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    ecs_set(world, entity_id, Velocity, {x, y});
+    ecs_set(world, entity_ecs_id, Velocity, {x, y});
     return true;
 }
 
-EXPORT bool flecs_entity_set_velocity(uint32_t entity_index, float *x, float *y)
+EXPORT bool flecs_entity_set_velocity(uint32_t entity_id, float *x, float *y)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
 
-    if (!ecs_has(world, entity_id, Velocity))
+    if (!ecs_has(world, entity_ecs_id, Velocity))
     {
-        printf("Entity %u has no velocity component\n", entity_index);
+        printf("Entity %u has no velocity component\n", entity_id);
         return false;
     }
 
-    const Velocity *vel = ecs_get(world, entity_id, Velocity);
+    const Velocity *vel = ecs_get(world, entity_ecs_id, Velocity);
     *x = vel->x;
     *y = vel->y;
     return true;
 }
 
-EXPORT bool flecs_entity_set_position(uint32_t entity_index, float x, float y)
+EXPORT bool flecs_entity_set_position(uint32_t entity_id, float x, float y)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
 
-    ecs_set(world, entity_id, Position, {x, y});
+    ecs_set(world, entity_ecs_id, Position, {x, y});
     return true;
 }
 
-EXPORT bool flecs_entity_get_position(uint32_t entity_index, float *x, float *y)
+EXPORT bool flecs_entity_get_position(uint32_t entity_id, float *x, float *y)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
 
-    if (!ecs_has(world, entity_id, Position))
+    if (!ecs_has(world, entity_ecs_id, Position))
     {
-        printf("Entity %u has no position component\n", entity_index);
+        printf("Entity %u has no position component\n", entity_id);
         return false;
     }
 
-    const Position *pos = ecs_get(world, entity_id, Position);
+    const Position *pos = ecs_get(world, entity_ecs_id, Position);
     *x = pos->x;
     *y = pos->y;
     return true;
 }
 
-EXPORT bool flecs_entity_set_destination(uint32_t entity_index, float x, float y, float speed)
+EXPORT bool flecs_entity_set_destination(uint32_t entity_id, float x, float y, float speed)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    ecs_set(world, entity_id, Destination, {x, y, speed});
+    ecs_set(world, entity_ecs_id, Destination, {x, y, speed});
     return true;
 }
 
-EXPORT bool flecs_entity_get_destination(uint32_t entity_index, float *x, float *y, float *speed)
+EXPORT bool flecs_entity_get_destination(uint32_t entity_id, float *x, float *y, float *speed)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
-    if (!ecs_has(world, entity_id, Destination))
+    if (!ecs_has(world, entity_ecs_id, Destination))
     {
-        printf("Entity %u has no destination component\n", entity_index);
+        printf("Entity %u has no destination component\n", entity_id);
         return false;
     }
-    const Destination *dest = ecs_get(world, entity_id, Destination);
+    const Destination *dest = ecs_get(world, entity_ecs_id, Destination);
     *x = dest->x;
     *y = dest->y;
     *speed = dest->speed;
@@ -388,29 +391,29 @@ EXPORT bool flecs_entity_get_destination(uint32_t entity_index, float *x, float 
 }
 
 // trying out a generic set component function for components that are vector2 of floats.
-EXPORT bool flecs_entity_set_component_vec2(uint32_t entity_index, uint32_t component_id, float x, float y)
+EXPORT bool flecs_entity_set_component_vec2(uint32_t entity_id, uint32_t component_id, float x, float y)
 {
-    ecs_entity_t entity_id = get_entity_ecs_id(entity_index);
-    if (entity_id == 0)
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
+    if (entity_ecs_id == 0)
         return false;
 
-    const ComponentInfo *entry = get_component_info(component_id);
-    if (!entry)
+    const ComponentInfo *component_info = get_component_info(component_id);
+    if (!component_info)
     {
         fprintf(stderr, "Invalid component ID: %d\n", component_id);
         return false;
     }
 
-    void *comp = ecs_get_mut_id(world, entity_id, entry->ecs_id);
+    void *comp = ecs_get_mut_id(world, entity_ecs_id, component_info->ecs_id);
     if (!comp)
     {
-        fprintf(stderr, "Failed to get component: %s\n", entry->name);
+        fprintf(stderr, "Failed to get component: %s\n", component_info->name);
         return false;
     }
 
-    if (entry->size != sizeof(float) * 2)
+    if (component_info->size != sizeof(float) * 2)
     {
-        fprintf(stderr, "Component size mismatch: %s\n", entry->name);
+        fprintf(stderr, "Component size mismatch: %s\n", component_info->name);
         return false;
     }
 
@@ -422,14 +425,14 @@ EXPORT bool flecs_entity_set_component_vec2(uint32_t entity_index, uint32_t comp
     values[1] = y;
 
     // be sure to tag it as modified for observers
-    ecs_modified_id(world, entity_id, entry->ecs_id);
+    ecs_modified_id(world, entity_ecs_id, component_info->ecs_id);
 
     return true;
 }
 
-EXPORT bool flecs_entity_get_component_vec2(uint32_t entity_index, uint32_t component_id, float *x, float *y)
+EXPORT bool flecs_entity_get_component_vec2(uint32_t entity_id, uint32_t component_id, float *x, float *y)
 {
-    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_index);
+    ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
     if (entity_ecs_id == 0)
         return false;
 
@@ -442,7 +445,7 @@ EXPORT bool flecs_entity_get_component_vec2(uint32_t entity_index, uint32_t comp
 
     if (!ecs_has_id(world, entity_ecs_id, component_info->ecs_id))
     {
-        fprintf(stderr, "Entity %u has no %s component\n", entity_index, component_info->name);
+        fprintf(stderr, "Entity %u has no %s component\n", entity_id, component_info->name);
         return false;
     }
 
