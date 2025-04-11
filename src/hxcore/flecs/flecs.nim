@@ -1,19 +1,19 @@
-# lib/flecs_wrapper/flecs_wrapper.nim
+# lib/flecs/flecs.nim
 
-# header files are in lib/flecs_wrapper/include
-# source files are in lib/flecs_wrapper/src
-{.passC: "-Ilib/flecs_wrapper/include".}
+# header files are in lib/flecs/flecs_wrapper/include
+# source files are in lib/flecs/flecs_wrapper/src
+{.passC: "-Ilib/flecs/flecs_wrapper/include".}
 {.passC: "-I./include".} 
 {.passC: "-std=c99".} 
 {.passC: "-D_GNU_SOURCE".}
 {.passL: "-lm".}
-{.compile: "src/flecs.c".}
-{.compile: "src/flecs_wrapper.c".}
-{.compile: "src/flecs_wrapper_entity.c".}
-{.compile: "src/flecs_wrapper_component.c".}
-{.compile: "src/flecs_wrapper_event.c".}
-{.compile: "src/systems/move_system.c".}
-{.compile: "src/systems/destination_system.c".}
+{.compile: "flecs_wrapper/src/flecs.c".}
+{.compile: "flecs_wrapper/src/flecs_wrapper.c".}
+{.compile: "flecs_wrapper/src/flecs_wrapper_entity.c".}
+{.compile: "flecs_wrapper/src/flecs_wrapper_component.c".}
+{.compile: "flecs_wrapper/src/flecs_wrapper_event.c".}
+{.compile: "flecs_wrapper/src/systems/move_system.c".}
+{.compile: "flecs_wrapper/src/systems/destination_system.c".}
 
 
 ## Event IDs (order matters since these are mapped in the flecs_wrapper.  Note that indecies start at 1, leaving 0 for  unknown event/error)
