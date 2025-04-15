@@ -6,7 +6,13 @@
 {.passC: "-I./include".} 
 {.passC: "-std=c99".} 
 {.passC: "-D_GNU_SOURCE".}
-{.passL: "-lm".}
+{.passL: "-static".}
+{.passL: "-Llib/flecs/flecs_wrapper/lib".}
+{.passL: "-lflecs_wrapper".}
+{.passL: "-lm".} # order matters, link math after flecs
+
+
+#[
 {.compile: "flecs_wrapper/src/flecs.c".}
 {.compile: "flecs_wrapper/src/flecs_wrapper.c".}
 {.compile: "flecs_wrapper/src/flecs_wrapper_entity.c".}
@@ -14,7 +20,7 @@
 {.compile: "flecs_wrapper/src/flecs_wrapper_event.c".}
 {.compile: "flecs_wrapper/src/systems/move_system.c".}
 {.compile: "flecs_wrapper/src/systems/destination_system.c".}
-
+]#
 
 ## Event IDs (order matters since these are mapped in the flecs_wrapper.  Note that indecies start at 1, leaving 0 for  unknown event/error)
 #    FLECS_HI_COMPONENT_ID + 40, // EcsOnAdd
