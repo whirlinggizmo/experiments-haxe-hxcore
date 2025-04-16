@@ -46,4 +46,29 @@ class PathUtils {
 			.concat(aPath.slice(matchesUpToIndex + 1))
 			.join('/');
 	}
+
+	public static function getDirectoryTail(path:String):String {
+		var normalizedPath = Path.normalize(path); // clean it and fix windows slashes
+		var dir = Path.directory(path); // remove filename if any
+		var parts = dir.split("/");     // split into path segments
+		return parts[parts.length - 1];
+	}
+
+	public static function getDirectoryHead(path:String):String {
+		var normalizedPath = Path.normalize(path); // clean it and fix windows slashes
+		var dir = Path.directory(path); // remove filename if any
+		var parts = dir.split("/");     // split into path segments
+		return parts[0];
+	}
+	
+	public static function getDirectoryParent(path:String):String {
+		var dir = Path.directory(path);         // strips off filename if present
+		var normalized = Path.normalize(dir);   // ensures consistent "/"
+		var parts = normalized.split("/");
+	
+		if (parts.length <= 1)
+			return ""; // root or already at top level
+	
+		return parts.slice(0, parts.length - 1).join("/");
+	}
 }
