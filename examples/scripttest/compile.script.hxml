@@ -7,7 +7,5 @@
 
 # Leave the --class dangling so we can add one on the command line (e.g. haxe compile.script.hxml Test)
 # Note:  Not sure I love this, since anything else in this file will be passed along as an arg (including --next, --cmd, etc)
-# I've added an 'end of arguments' marker ('--'), so anything after that won't be passed to the ScriptCompiler, but the args will still be consumed
+# I've added an 'end of arguments' marker ('--'), so anything after that won't be considered by the ScriptCompiler, but the args will still be consumed
 --class 
-
-

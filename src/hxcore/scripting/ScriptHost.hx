@@ -1,9 +1,12 @@
+// src/hxcore/scripting/ScriptHost.hx
+
 package hxcore.scripting;
 
 // import hxcore.stage.IStage;
 // import hxcore.app.IApp;
 // import haxe.macro.Type.Ref;
 // import hxcore.util.TypeUtils;
+import hxcore.scripting.ScriptLoader;
 import hxcore.events.EventEmitter;
 // import hxcore.events.EventEmitterTracker;
 import hxcore.logging.Log;
@@ -94,9 +97,9 @@ class ScriptHost implements IScriptHost {
 	}
 
 	public function loadScript(scriptName:String, ?onCreatedCallback:ScriptHost->Void, ?onLoadedCallback:ScriptHost->Void) {
-		ScriptLoader.load(scriptName, (scriptName:String, loadedScript:Script) -> {
+		ScriptLoader.load(scriptName, (scriptName:String, loadedScriptInfo:ScriptInfo) -> {
 			var isReload = (this.script != null);
-			if (loadedScript == null) {
+			if (loadedScriptInfo == null) {
 				if (isReload) {
 					// script was created before (but failed to reload)
 					Log.warn("Failed to load script " + scriptName);
@@ -117,6 +120,7 @@ class ScriptHost implements IScriptHost {
 			}
 
 			this.scriptName = scriptName;
+			
 			scriptCreated = true;
 
 			try {
@@ -126,21 +130,21 @@ class ScriptHost implements IScriptHost {
 					this.script._baseUnload();
 
 					// set the new script env and reload
-					this.script = loadedScript;
+					this.script = loadedScriptInfo.script;
 					// set the new script's context and let it load any data from the previously unloaded script
 					setScriptEnvironment();
-					loadedScript._baseReload();
+					this.script._baseReload();
 					scriptLoaded = true;
 				} else {
 					// first time loading this script
 					// set the new script env and reload
-					this.script = loadedScript;
+					this.script = loadedScriptInfo.script;
 
 					if (onCreatedCallback != null) {
 						onCreatedCallback(this);
 					}
 					setScriptEnvironment();
-					loadedScript._baseLoad();
+					this.script._baseLoad();
 					scriptLoaded = true;
 				}
 				if (onLoadedCallback != null) {

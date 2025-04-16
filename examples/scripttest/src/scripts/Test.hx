@@ -1,18 +1,21 @@
+package scripts; 
+
+import hxcore.scripting.Script;
+import hxcore.util.FPSCounter;
 // The scripts directory is added to the class path, so no package required 
 //package;
 
-import hxcore.util.FPSCounter;
 
 class Test extends Script {
 	var thing:String;
 
 	function onAttack(args) {
-		log('Attack received with damagffe: ${Std.string(args.damage)}');
+		log('Attack received with damage: ${Std.string(args.damage)}');
 	} 
 
 
 	override function onUpdate(deltaTimeMS:Float) {
-		log('Updated: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
+		log('Update: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
 	}
 
 	//override function onFixedUpdate(frameDurationMS:Float) {

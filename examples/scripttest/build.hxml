@@ -14,6 +14,7 @@
 -cp src
 -cpp out
 
+
 # enable cppia
 -D scriptable 
 -D HXCPP_M64
@@ -32,9 +33,9 @@
 
 --define HAXE_OUTPUT_FILE=ScriptTest
 --main ScriptTest
--cp scripts
-#Test
 
+# include the compiled in scripts 
+scripts.Test
 
 
 # move the generated export_classes.info to the script source directory
@@ -55,8 +56,9 @@
 # We could also call "compile.script.hxml Test" from this hxml, but that sends *everything* after the call to the hxml as args to ScriptCompiler (including --next, --cmd, etc)
 # Instead, we'll invoke the macro directly.
 # BTW:  From the command line, you can rebuild the script with "haxe build.script.hxml Test", in case you don't have the hot-compile feature enabled.
--lib hxcore
---macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
+
+#-lib hxcore
+#--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
 
 --cmd echo ""
 --cmd echo "Build complete."

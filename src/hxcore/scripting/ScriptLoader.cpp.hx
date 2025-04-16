@@ -1,9 +1,11 @@
+// src/hxcore/scripting/ScriptLoader.cpp.hx
 package hxcore.scripting;
 
 import hxcore.logging.Log;
 import hxcore.util.TypeUtils;
 import hxcore.scripting.Script;
 import haxe.io.Path;
+import hxcore.util.PathUtils;
 #if sys
 import hxcore.scripting.ScriptCompiler;
 import hxcore.io.FileWatcher;
@@ -13,12 +15,14 @@ import sys.FileSystem;
 import cpp.cppia.Module;
 #end
 #end
-typedef LoadedCallback = (scriptName:String, script:Script) -> Void;
+typedef LoadedCallback = (scriptName:String, scriptInfo:ScriptInfo) -> Void;
 
 typedef ScriptInfo = {
-	className:String,
-	script:Script,
-	loadedCallback:LoadedCallback
+	var ?className:String;
+	var ?script:Script;
+	var ?loadedCallback:LoadedCallback;
+	var ?isExternal:Bool;
+	var ?sourcePath:String;
 }
 
 class ScriptLoader {
@@ -28,6 +32,7 @@ class ScriptLoader {
 	private static var hotReloadEnabled:Bool = false;
 	private static var hotCompileEnabled:Bool = false;
 	private static var externalScriptsEnabled:Bool = false;
+	private static var internalScriptNamespace:String = "scripts";
 
 	#if sys
 	private static var haxeSourceFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
@@ -270,202 +275,121 @@ class ScriptLoader {
 		#end
 	}
 
-	private static function createScriptInstanceReplaceCompiled(scriptDirectory:String, className:String):Script {
-
-		// an attempt to use cppia scripts as mods to replace built in scripts
-		// unfortunately, haxe won't let me replace a built in script with a cppia script
-		// only a cppia script can replace a built in script
-
+	/**
+	 * Try to load a script class from the script directory or fallback to compiled-in scripts.
+	 * Ensures class is derived from Script, instantiates it, and sets metadata.
+	 */
+	private static function createScriptInstance(scriptDirectory:String, className:String):ScriptInfo {
+		scriptDirectory = Path.addTrailingSlash(Path.normalize(scriptDirectory));
+		var sourceFilePath = Path.normalize(Path.join([scriptDirectory, className + ".cppia"]));
 		var resolvedClass:Class<Dynamic> = null;
-
-		// Try loading from the script directory (if provided)
-		#if (sys && scriptable)
-		if (externalScriptsEnabled) {
-			if (FileSystem.exists(scriptDirectory)) {
-				var sourceFilePath = Path.normalize(Path.join([scriptDirectory, className + ".cppia"]));
-				if (FileSystem.exists(sourceFilePath)) {
-					try {
-						var source = sys.io.File.getBytes(sourceFilePath);
-						var data = source.getData();
-						if (data != null) {
-							var module = Module.fromData(data);
-							module.boot();
-							module.run(); // calls main() if it exists
-							resolvedClass = module.resolveClass(className);
-							if (resolvedClass == null) {
-								Log.error("Failed to resolve cppia class module: " + className);
-							}
-						} else {
-							Log.error("Failed to load module (bad data): " + sourceFilePath);
-						}
-					} catch (e:Dynamic) {
-						Log.error('Failed to load module from script directory: $sourceFilePath\n${e.message}');
-					}
-				} else {
-					Log.warn("Script file not found in directory: " + sourceFilePath);
-				}
-			} else {
-				Log.warn("Script directory not found: " + scriptDirectory);
+		final scriptInfo:ScriptInfo = {className: className, sourcePath: sourceFilePath};
+		#if scriptable
+		try {
+			if (!externalScriptsEnabled) {
+				throw('External scripts not enabled, trying internal scripts instead: $className');
 			}
-		} else {
-			Log.warn("External scripts not enabled");
-		}
+			if (!FileSystem.exists(scriptDirectory)) {
+				throw 'Script directory not found: $scriptDirectory';
+			}
 
-		if (resolvedClass == null) {
-			Log.warn('Failed to load class "$className".  Trying internal resolution...');
+			if (!FileSystem.exists(sourceFilePath)) {
+				throw 'Script file not found: $sourceFilePath';
+			}
+
+			final data = sys.io.File.getBytes(sourceFilePath).getData();
+			if (data == null) {
+				throw 'Failed to load module (bad data): $sourceFilePath';
+			}
+
+			final module = Module.fromData(data);
+			module.boot();
+			module.run();
+
+			resolvedClass = module.resolveClass(className);
+			if (resolvedClass == null) {
+				throw 'Failed to resolve cppia class: $className';
+			}
+			scriptInfo.isExternal = true;
+			scriptInfo.sourcePath = sourceFilePath;
+		} catch (e:Dynamic) {
+			Log.warn('Failed to load cppia module: $sourceFilePath\n${e.message}');
 		}
 		#end
 
-		// If loading from scriptDirectory failed, try to resolve the class type (compiled in)
 		if (resolvedClass == null) {
+			// we didn't find the class in the script directory (or it's disabled), try the internal scripts
+			var internalClassName = internalScriptNamespace + "." + className;
 			try {
-				Log.debug("Trying to resolve class from built in scripts: " + className);
-				resolvedClass = Type.resolveClass(className);
+				Log.debug('Trying to resolve class from built-in scripts: $internalClassName');
+				resolvedClass = Type.resolveClass(internalClassName);
 				if (resolvedClass == null) {
-					Log.error("Failed to resolve class: " + className);
-					return null;
+					throw 'Failed to resolve class from built-in scripts: $internalClassName';
 				}
+				scriptInfo.isExternal = false;
+				scriptInfo.sourcePath = internalClassName;
 			} catch (e:Dynamic) {
-				Log.error("Failed to resolve class: " + className, "\n" + e.message);
+				Log.error('Failed to resolve built-in class: $internalClassName\n${e.message}');
 				return null;
 			}
 		}
 
-		// Ensure the resolved class is derived from Script
 		if (!TypeUtils.isDerivedFrom(resolvedClass, Script)) {
 			Log.error('Class $className is not derived from Script');
 			return null;
 		}
 
-		// Create an instance of the class
-		var instance = Type.createInstance(resolvedClass, []);
+		final instance = Type.createInstance(resolvedClass, []);
 		if (instance == null) {
-			Log.error("Failed to create instance of class: " + className);
+			Log.error('Failed to create instance of class: $className');
 			return null;
 		}
 
-		var script:Script = cast(instance, Script);
-		script.scriptName = className;
-		//script.scriptDirectory = scriptDirectory ?? ""; 
-		return script;
+		scriptInfo.script = cast instance;
+		scriptInfo.className = className;
+
+		// set some values on the script itself
+		scriptInfo.script.scriptName = className;
+		scriptInfo.script.scriptDirectory = scriptInfo.sourcePath;
+		return scriptInfo;
 	}
 
-	private static function createScriptInstance(scriptDirectory:String, className:String):Script {
-		try {
-			var resolvedClass = null;
-			#if scriptable
-			// check for the base script directory
-			if (!FileSystem.exists(scriptDirectory)) {
-				Log.error("Script directory not found: " + scriptDirectory);
-				return null;
-			}
-
-			// Load the code from cppia file
-			var sourceFilePath = Path.join([scriptDirectory, className + ".cppia"]);
-			sourceFilePath = Path.normalize(sourceFilePath);
-			if (!FileSystem.exists(sourceFilePath)) {
-				Log.warn("Script file not found: " + sourceFilePath);
-				return null;
-			}
-
-			// create the module from the source file (.cppia)
-			try {
-				var source = sys.io.File.getBytes(sourceFilePath);
-				var data = source.getData();
-				if (data == null) {
-					Log.error("Failed to load module (bad data): " + sourceFilePath);
-					return null;
-				}
-
-				var module = Module.fromData(data);
-				module.boot();
-				module.run(); // call main, if it exists?
-				resolvedClass = module.resolveClass(className);
-				if (resolvedClass == null) {
-					Log.error("Failed to resolve class from cppia module: " + className);
-					Log.info("Trying to load class from built in scripts: " + className);
-					resolvedClass = Type.resolveClass(className);
-					if (resolvedClass == null) {
-						Log.error("Failed to resolve class from built in scripts: " + className);
-						return null;
-					}
-					//return null;
-				}
-			} catch (e) {
-				Log.error("Failed to load module: " + sourceFilePath, "\n" + e.message);
-				return null;
-			}
-			#else
-			try {
-				resolvedClass = Type.resolveClass(className);
-				if (resolvedClass == null) {
-					Log.error("Failed to resolve class: " + className);
-					return null;
-				}
-			} catch (e) {
-				Log.error("Failed to resolve class: " + className, "\n" + e.message);
-				return null;
-			}
-			#end
-
-			// Make sure the class is derived from Script
-			if (!TypeUtils.isDerivedFrom(resolvedClass, Script)) {
-				Log.error('Class $className is not derived from Script');
-				return null;
-			}
-
-			// Create an instance of the class
-			var instance = Type.createInstance(resolvedClass, []);
-			if (instance == null) {
-				Log.error("Failed to create instance of class: " + className);
-				return null;
-			}
-
-			// Cast it to a Script
-			var script:Script = cast(instance, Script);
-
-			// Set the script name and directory
-			script.scriptName = className;
-			script.scriptDirectory = scriptSourceDirectory;
-
-			return script;
-		} catch (e:Dynamic) {
-			Log.error("Unable to load script file: " + Std.string(e));
-			return null;
-		}
-	}
-
-	public static function forceReload(scriptName:String, ?onLoaded:String->Script->Void):Void {
-		if (!scriptCache.exists(scriptName)) {
+	public static function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {
+		var cachedScriptInfo = scriptCache.get(scriptName);
+		if (cachedScriptInfo == null) {
 			Log.warn("Unable to reload script that hasn't already been loaded: " + scriptName);
 			return;
 		}
 
-		var scriptInfo = scriptCache.get(scriptName);
-
-		var script = createScriptInstance(scriptDirectory, scriptName);
-
-		scriptInfo.script = script;
-		scriptInfo.className = scriptName;
-		scriptInfo.loadedCallback = onLoaded ?? scriptInfo.loadedCallback;
-
-		// save the script into our cache
-		scriptCache.set(scriptName, scriptInfo);
-
-		if (script != null) {
+		var scriptInfo = createScriptInstance(scriptDirectory, scriptName);
+		if (scriptInfo != null) {
 			// successfully loaded
-			scriptInfo.loadedCallback(scriptName, script);
+			scriptInfo.loadedCallback = onLoaded ?? cachedScriptInfo.loadedCallback;
+
+			// do we need to clear the old script info?
+			cachedScriptInfo.script = null;
+			cachedScriptInfo.className = null;
+			cachedScriptInfo.loadedCallback = null;
+			scriptCache.remove(scriptName);
+
+			// replace the old cached script info with the new one
+			scriptCache.set(scriptName, scriptInfo);
+
+			scriptInfo.loadedCallback(scriptName, scriptInfo);
 		} else {
 			// Log.error('Error loading script: ' + scriptDirectory + '/' + scriptName);
-			scriptInfo.loadedCallback(scriptName, null);
+			cachedScriptInfo.loadedCallback(scriptName, null);
 		}
 	}
 
-	public static function load(scriptName:String, onLoaded:String->Script->Void):Void {
-		var previousScript = scriptCache.get(scriptName);
+	public static function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
+		var cachedScriptInfo = scriptCache.get(scriptName);
 
-		if (scriptCache.exists(scriptName)) {
-			onLoaded(scriptName, scriptCache.get(scriptName).script);
+		if (cachedScriptInfo != null) {
+			// already loaded
+			if (onLoaded != null) {
+				onLoaded(scriptName, cachedScriptInfo);
+			}
 			return;
 		}
 
@@ -486,22 +410,22 @@ class ScriptLoader {
 					return;
 				}
 
-				// if (filename != scriptName) {
-				//	Log.error('Script changed, but script name does not match: ${filename} != $scriptName');
-				//	return;
-				// }
-
-				// var haxeArgs = ["--debug", "-dce", "no", "-lib", "hxcpp-debug-server" ];
-				// var haxeArgs = ["-D", "CPPIA_NO_JIT"];
+				// ensure the scriptSourceDirectory appears as a directory by appending a trailing slash
+				scriptSourceDirectory = Path.addTrailingSlash(scriptSourceDirectory);
 
 				var haxeArgs = ["-dce", "full", "-cp", "lib"];
 
+				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
 				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, "cppia", haxeArgs, scriptName);
 
 				if (result != 0) {
 					// If the compilation failed, the script on disk will be the old version.
 					// Should we call onLoaded(scriptName, null) if the compilation fails?
 					// Log.error("Failed to compile script: " + scriptName);
+					//cachedScriptInfo = scriptCache.get(scriptName);
+					//if (cachedScriptInfo != null && cachedScriptInfo.loadedCallback != null) {
+					//	cachedScriptInfo.loadedCallback(scriptName, null);
+					//}
 					onLoaded(scriptName, null);
 					return;
 				}
@@ -512,30 +436,34 @@ class ScriptLoader {
 		// If it changes, reload the script.
 		if (hotReloadEnabled) {
 			createHotReloadWatcher(scriptDirectory, scriptName, (filename:String) -> {
-				Log.info("Reloading script file: " + filename);
 
 				if (filename == null) {
+					Log.error("Reload Watcher: Failed to reload script file (null filename): " + scriptName);
 					return;
 				}
 
-				// if (filename != scriptName) {
-				//	Log.error("Script file changed but name does not match: " + filename + " != " + scriptName);
-				//	return;
-				// }
+				Log.info("Reload Watcher: Reloading script file: " + filename);
 
-				var changedScript = createScriptInstance(scriptDirectory, scriptName);
-				onLoaded(scriptName, changedScript);
+				var scriptInfo = createScriptInstance(scriptDirectory, scriptName);
+				if (scriptInfo != null) {
+					// successfully loaded
+					scriptInfo.isExternal = true;
+
+					onLoaded(scriptName, scriptInfo);
+				} else {
+					onLoaded(scriptName, null);
+				}
 			});
 		}
 
-		var script = createScriptInstance(scriptDirectory, scriptName);
+		var scriptInfo = createScriptInstance(scriptDirectory, scriptName);
 
-		// save the script into our cache
-		scriptCache.set(scriptName, {script: script, className: scriptName, loadedCallback: onLoaded});
+		if (scriptInfo != null) {
+			// save the script into our cache
+			scriptInfo.loadedCallback = onLoaded;
+			scriptCache.set(scriptName, scriptInfo);
 
-		if (script != null) {
-			// successfully loaded
-			onLoaded(scriptName, script);
+			onLoaded(scriptName, scriptInfo);
 		} else {
 			// Log.error('Error loading script: ' + scriptDirectory + '/' + scriptName);
 			onLoaded(scriptName, null);

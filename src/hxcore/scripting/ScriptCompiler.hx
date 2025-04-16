@@ -3,13 +3,14 @@ package hxcore.scripting;
 import sys.FileSystem;
 import haxe.io.Path;
 import hxcore.logging.Log;
+import hxcore.util.PathUtils;
 import sys.io.File;
 import sys.io.Process;
 
 // A script generator that generates "script" files from .hx files
 // hxml can't do variables, so we use this
-// Usage example: Compile 'Test.hx' in the 'scripts' directory to 'Test.cppia' in the 'bin/cppia/scripts' directory:
-// haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName Test --target cppia --outputDir bin/cppia/scripts
+// Usage example: Compile 'Test.hx' in the 'scripts' directory to 'Test.cppia' in the 'dist/scripts' directory:
+// haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName scripts.Test --target cppia --outputDir dist/scripts
 @:keep
 class ScriptCompiler {
 	public static function findHaxeExecutable():Null<String> {
@@ -62,6 +63,10 @@ class ScriptCompiler {
 		}
 	}
 
+	private static function ensureAbsolute(base:String, path:String):String {
+		return Path.isAbsolute(path) ? Path.normalize(path) : Path.normalize(Path.join([base, path]));
+	}
+
 	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, target:String, haxeArgs:Array<String>,
 			className:String):Int {
 		if (sourceDir == null) {
@@ -73,149 +78,76 @@ class ScriptCompiler {
 			return -1;
 		}
 
-		if (rootDir == null) {
-			rootDir = Sys.getCwd();
-		}
+		rootDir = rootDir ?? Sys.getCwd();
+		rootDir = ensureAbsolute(Sys.getCwd(), rootDir);
+		sourceDir = ensureAbsolute(rootDir, sourceDir);
+		outputDir = ensureAbsolute(rootDir, outputDir);
 
-		if (!Path.isAbsolute(rootDir)) {
-			rootDir = Path.join([Sys.getCwd(), rootDir]);
-		}
+		rootDir = Path.addTrailingSlash(rootDir);
+		sourceDir = Path.addTrailingSlash(sourceDir);
+		outputDir = Path.addTrailingSlash(outputDir);
 
-		if (!Path.isAbsolute(sourceDir)) {
-			sourceDir = Path.join([rootDir, sourceDir]);
-		}
-
-		if (!Path.isAbsolute(outputDir)) {
-			outputDir = Path.join([rootDir, outputDir]);
-		}
-
-		rootDir = Path.normalize(rootDir);
-		sourceDir = Path.normalize(sourceDir);
-		outputDir = Path.normalize(outputDir);
-
-		// strip any preceding '.' from the target (.js -> js, .cppia -> cppia, etc)
-		if (StringTools.startsWith(target, ".")) {
+		if (StringTools.startsWith(target, "."))
 			target = target.substring(1);
-		}
 
-		// convert package's '.' to '/' for the filename
 		var classNameAsPath = StringTools.replace(className, ".", "/");
 		var classPath = new Path(classNameAsPath);
 		var packagePath = classPath.dir ?? "";
-		var outputFileName = classPath.file + '.' + target;
+		var outputFileName = '${classPath.file}.$target';
 		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
 		var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
 
-		//Log.debug('Compiling class: ${className}');
-		//Log.debug("Source file: " + hxFilePath);
-		//Log.debug("Output file: " + outputFilePath);
+		Log.debug('Compiling class: $className');
+		Log.debug('Source file: $hxFilePath');
+		Log.debug('Output file: $outputFilePath');
 
-		// delete the existing output file so the user doesn't think it succeeded?
-		if (FileSystem.exists(outputFilePath)) {
+		if (FileSystem.exists(outputFilePath))
 			FileSystem.deleteFile(outputFilePath);
-		}
-
-		// ensure the source path is a valid haxe file
 		if (!FileSystem.exists(hxFilePath)) {
-			Log.error("Class file not found: " + hxFilePath);
+			Log.error('Class file not found: $hxFilePath');
 			return -1;
 		}
-
-		// create the output directory
-		if (!FileSystem.exists(outputFileDir)) {
+		if (!FileSystem.exists(outputFileDir))
 			FileSystem.createDirectory(outputFileDir);
-		}
 
-		// trace("rootDir: " + rootDir);
-		// trace("sourceDir: " + sourceDir);
-
-		/*
-			var defines = Context.getDefines();
-			for (key in defines.keys()) {
-				trace("Define: " + key + " = " + defines.get(key));
-			}
-
-
-			Compiler.addClassPath(Path.join([rootDir, sourceDir]));
-			//Compiler.include("hxcore");
-			//Compiler.define("source-map-content");
-			//Compiler.define("source-map");
-			//Compiler.define("enable-script-reload");
-			//Compiler.define("cppia");
-			//Compiler.define("dce", "no");
-
-			Compiler.define("OUTPUT_FILE", outputFilePath);
-			Compiler.define("CLASS_NAME", className);
-		 */
-
-		// compile the script
 		var classInfoFile = Path.join([sourceDir, "export_classes.info"]);
-
 		if (!FileSystem.exists(classInfoFile)) {
-			Log.error("Class info file not found: " + classInfoFile);
+			Log.error('Class info file not found: $classInfoFile');
 			return -1;
-		} else {
-			// Log.info("Class info file found: " + classInfoFile);
 		}
 
 		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classInfoFile'];
-		//var args = ["-cp", sourceDir, "-lib", "hxcore"];
+		#if emscripten
+		args.push("-D");
+		args.push("CPPIA_NO_JIT");
+		#end
+		args = args.concat(trimArgs(haxeArgs));
+		args = args.concat(['-$target', outputFilePath, className]);
 
-		// disable jit for emscripten
-		if (target == "emscripten") {
-			args.push("-D");
-			args.push("CPPIA_NO_JIT");
-		} else {
-			args.push("-D");
-			args.push("CPPIA_NO_JIT");
-		}
-
-		// this should already have been done, but just in case
-		haxeArgs = trimArgs(haxeArgs);
-
-		// add the haxe args from the command line
-		args = args.concat(haxeArgs);
-
-		// add the target
-		args.push('-${target}');
-
-		// add the output file
-		args.push('${outputFilePath}');
-
-		// add the class name
-		args.push('${className}');
-
-		var returnCode = -1;
-
-		try {
-			var cmd = findHaxeExecutable();
-
-			if (cmd == null) {
-				Log.error("Unable to find haxe executable");
-				return -1;
-			}
-
-			//Log.debug("Command: " + cmd);
-			//Log.debug("Args: " + args);
-
-			// try to compile the script
-			final process = new Process(cmd, args);
-			var stdout = process.stdout.readAll().toString();
-			var stderr = process.stderr.readAll().toString();
-			returnCode = process.exitCode();
-			process.close();
-			if (returnCode != 0) {
-				Log.error('Failed to compile class: $className\n$stderr');
-				return returnCode;
-			}
-		} catch (e) {
-			Log.error('Failed to compile class: $className\n${e.message}');
+		var cmd = findHaxeExecutable();
+		if (cmd == null) {
+			Log.error('Unable to find haxe executable');
 			return -1;
 		}
 
-		// Log.info('Compiled class: ${className}');
+		Log.debug('Command: $cmd');
+		Log.debug('Args: $args');
 
+		try {
+			final process = new Process(cmd, args);
+			var stdout = process.stdout.readAll().toString();
+			var stderr = process.stderr.readAll().toString();
+			var returnCode = process.exitCode();
+			process.close();
+			if (returnCode != 0) {
+				Log.error('Haxe returned an error while compiling: $className:\n$stderr');
+				return -1;
+			}
+		} catch (e) {
+			Log.error('Haxe returned an error while compiling: $className:\n${e.message}');
+			return -1;
+		}
 		return 0;
 	}
 
