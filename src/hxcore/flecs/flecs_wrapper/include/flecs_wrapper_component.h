@@ -38,6 +38,10 @@ extern "C"
 
     const ecs_entity_t get_component_ecs_id_by_name(const char *name);
 
+    const uint32_t get_component_size(uint32_t component_id);
+
+    const uint32_t get_component_size_by_ecs_id(ecs_entity_t ecs_id);
+    
     void clear_component_info();
 
 #define REGISTER_COMPONENT(world, Type)                                                                     \

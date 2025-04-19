@@ -5,6 +5,7 @@
 #include "../components/velocity.h"
 
 void MoveSystem(ecs_iter_t *it) {
+    printf("MoveSystem called for %d entities\n", it->count);
     Position *p = ecs_field(it, Position, 0);
     Velocity *v = ecs_field(it, Velocity, 1);
 

@@ -11,10 +11,7 @@
 extern "C"
 {
 #endif
-
-    // Observer callback type
-    typedef void (*ObserverCallback)(uint32_t entity_id, uint32_t component_id, uint32_t event_id, uint32_t callback_id);
-
+   
     // Component management
     int32_t flecs_component_get_id_by_name(const char *name);
     bool flecs_component_is_mark_changed_by_name(uint32_t entity_id, const char *component_name);
@@ -50,7 +47,12 @@ extern "C"
     bool flecs_entity_destroy(uint32_t entity_id);
 
     // Observer registration
+    typedef void (*ObserverCallback)(uint32_t entity_id, uint32_t component_id, uint32_t event_id, uint32_t callback_id);
     bool flecs_register_observer(uint32_t *component_ids, uint32_t num_components, uint32_t *event_ids, uint32_t num_events, ObserverCallback callback, uint32_t callback_id);
+
+    // System registration
+    typedef void (*SystemCallback)(uint32_t entity_id, void** components, uint32_t num_components, uint32_t callback_id);
+    bool flecs_register_system(const char* name, uint32_t *component_ids, uint32_t num_components, SystemCallback callback, uint32_t callback_id);
 
     // Lifecycle management
     void flecs_init(void);

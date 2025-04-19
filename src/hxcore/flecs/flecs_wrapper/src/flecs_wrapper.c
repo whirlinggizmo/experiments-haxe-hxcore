@@ -5,8 +5,6 @@
 #include "flecs.h"
 #include "flecs_wrapper.h"
 #include "flecs_wrapper_component.h"
-#include "flecs_wrapper_entity.h"
-#include "flecs_wrapper_event.h"
 
 // components
 #include "components/position.h"
@@ -33,17 +31,9 @@ EXPORT void flecs_init()
     REGISTER_COMPONENT(world, Velocity);
     REGISTER_COMPONENT(world, Destination);
 
-    // set our event_id -> observer event_type.  Since EcsOnAdd, EcsOnRemove, etc are not defines, we have to do it during runtime
-    // we could use the actual value if we were confident that they wouldn't change
-    // see flecs' world.c
+    //ECS_SYSTEM(world, DestinationSystem, EcsOnUpdate, Position, Velocity, Destination);
 
-    // ECS_COMPONENT_DEFINE(world, Position);
-    // ECS_COMPONENT_DEFINE(world, Velocity);
-    // ECS_COMPONENT_DEFINE(world, Destination);
-
-    ECS_SYSTEM(world, DestinationSystem, EcsOnUpdate, Position, Velocity, Destination);
-
-    ECS_SYSTEM(world, MoveSystem, EcsOnUpdate, Position, Velocity);
+    //ECS_SYSTEM(world, MoveSystem, EcsOnUpdate, Position, Velocity);
 }
 
 EXPORT void flecs_progress(float delta_time)

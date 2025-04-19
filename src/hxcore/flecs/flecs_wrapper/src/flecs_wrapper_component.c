@@ -1,4 +1,4 @@
-// lib/flecs_wrapper/src/flecs_wrapper.c
+// lib/flecs_wrapper/src/flecs_wrapper_component.c
 #define FLECS_OBSERVER
 
 #include <stdlib.h>
@@ -14,14 +14,9 @@
 // defined in flecs_wrapper.c 
 extern ecs_world_t *world;
 
-// just some asserts to ensure our Vector2-like component sizes haven't changed
-_Static_assert(sizeof(Position) == sizeof(float) * 2, "Position must be a vec2 (float x, float y) exactly");
-_Static_assert(sizeof(Velocity) == sizeof(float) * 2, "Velocity must be a vec2 (float x, float y) exactly");
-
 ECS_COMPONENT_DECLARE(Position);
 ECS_COMPONENT_DECLARE(Velocity);
 ECS_COMPONENT_DECLARE(Destination);
-// ECS_COMPONENT_DECLARE(DestinationChanged);
 
 // Lookup tables:
 
@@ -149,6 +144,22 @@ const ecs_entity_t get_component_ecs_id_by_name(const char *name)
     fprintf(stderr, "Unable to get component_ecs_id for name %s \n", name);
 
     return 0;
+}
+
+const uint32_t get_component_size(uint32_t component_id)
+{
+    if ((component_id < 1) || (component_id >= component_info_count))
+    {
+        fprintf(stderr, "Unable to get size for component_id %u (out of range 1..%u)\n", component_id, component_info_count - 1);
+        return 0;
+    }
+    return component_info_table[component_id].size;
+}
+
+const uint32_t get_component_size_by_ecs_id(ecs_entity_t ecs_id)
+{
+    uint32_t component_id = get_component_id(ecs_id);
+    return get_component_size(component_id);
 }
 
 void clear_component_info()

@@ -1,7 +1,6 @@
 // lib/flecs_wrapper/src/flecs_wrapper.c
 #define FLECS_OBSERVER
 
-#include <stdlib.h>
 #include "flecs.h"
 #include "flecs_wrapper.h"
 
@@ -10,9 +9,6 @@ extern ecs_world_t *world;
 
 
 // components
-#include "components/position.h"
-#include "components/velocity.h"
-#include "components/destination.h"
 
 // entity
 #define MAX_ENTITIES 65536
@@ -103,7 +99,7 @@ static uint32_t create_entity(const char *name)
     return id;
 }
 
-bool destroy_entity(uint32_t entity_id)
+static bool destroy_entity(uint32_t entity_id)
 {
     ecs_entity_t entity_ecs_id = get_entity_ecs_id(entity_id);
     if (entity_ecs_id == 0)

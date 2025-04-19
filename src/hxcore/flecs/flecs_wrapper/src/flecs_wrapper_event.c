@@ -6,7 +6,6 @@
 #include "flecs_wrapper.h"
 #include "flecs_wrapper_component.h"
 #include "flecs_wrapper_entity.h"
-#include "flecs_wrapper_event.h"
 
 // defined in flecs_wrapper.c 
 extern ecs_world_t *world;
@@ -84,7 +83,7 @@ static void on_observed_component_changed(ecs_iter_t *it)
     }
 }
 
-void free_observer_callback_ctx(void *ctx)
+static void free_observer_callback_ctx(void *ctx)
 {
     ObserverCallbackContext *cb_ctx = ctx;
     if (!cb_ctx)

@@ -1,7 +1,7 @@
 #ifndef POSITION_H
 #define POSITION_H
 
-//#include "flecs.h"
+#include "flecs.h"
 
 //#include "component_macros.h"
 

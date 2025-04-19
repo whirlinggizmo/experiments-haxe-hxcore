@@ -1,48 +1,59 @@
-import { dlopen, FFIType, ptr } from "bun:ffi";
+import { dlopen, ptr } from "bun:ffi";
 
-const libPath = `${import.meta.dir}/bin/libflecswrapper.so`;
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const libPath = `${__dirname}/bin/libflecswrapper.so`;
 console.log("Loading libflecswrapper from", libPath);
 
 const lib = dlopen(libPath, {
+  // Lifecycle
   flecs_init: { args: [], returns: "void" },
-  flecs_progress: { args: [], returns: "void" },
+  flecs_progress: { args: ["float"], returns: "void" },
   flecs_fini: { args: [], returns: "void" },
+  flecs_version: { args: [], returns: "cstring" },
 
-  flecs_create_entity: { args: ["cstring"], returns: "uint32_t" },
-  flecs_destroy_entity: { args: ["uint32_t"], returns: "bool" },
+  // Component management
+  flecs_component_get_id_by_name: { args: ["cstring"], returns: "int32_t" },
+  flecs_component_is_mark_changed_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
+  flecs_component_is_marked_changed: { args: ["uint32_t", "uint32_t"], returns: "bool" },
+  flecs_component_is_tag: { args: ["uint32_t"], returns: "bool" },
+  flecs_component_print_registry: { args: [], returns: "void" },
 
-  flecs_add_entity_component_by_id: { args: ["uint32_t", "uint32_t"], returns: "bool" },
-  flecs_add_entity_component_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
-  flecs_remove_entity_component_by_id: { args: ["uint32_t", "uint32_t"], returns: "bool" },
-  flecs_remove_entity_component_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
+  // Entity component inspection
+  flecs_entity_print_components: { args: ["uint32_t"], returns: "void" },
+  flecs_entity_has_component: { args: ["uint32_t", "uint32_t"], returns: "bool" },
+  flecs_entity_has_component_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
 
-  flecs_has_entity_component_by_id: { args: ["uint32_t", "uint32_t"], returns: "bool" },
-  flecs_has_entity_component_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
+  // Entity component modification
+  flecs_entity_add_component: { args: ["uint32_t", "uint32_t"], returns: "bool" },
+  flecs_entity_add_component_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
+  flecs_entity_remove_component: { args: ["uint32_t", "uint32_t"], returns: "bool" },
+  flecs_entity_remove_component_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
 
-  flecs_get_component_id_by_name: { args: ["cstring"], returns: "uint32_t" },
-  flecs_mark_component_changed_by_name: { args: ["uint32_t", "cstring"], returns: "bool" },
-  flecs_mark_component_changed_by_id: { args: ["uint32_t", "uint32_t"], returns: "bool" },
+  // Specific component helpers
+  flecs_entity_set_velocity: { args: ["uint32_t", "float", "float"], returns: "bool" },
+  flecs_entity_get_velocity: { args: ["uint32_t", "pointer", "pointer"], returns: "bool" },
+  flecs_entity_set_position: { args: ["uint32_t", "float", "float"], returns: "bool" },
+  flecs_entity_get_position: { args: ["uint32_t", "pointer", "pointer"], returns: "bool" },
+  flecs_entity_set_destination: { args: ["uint32_t", "float", "float", "float"], returns: "bool" },
+  flecs_entity_get_destination: { args: ["uint32_t", "pointer", "pointer", "pointer"], returns: "bool" },
 
-  flecs_set_entity_component_vec2: {
-    args: ["uint32_t", "uint32_t", "float", "float"],
-    returns: "bool",
-  },
-  flecs_get_entity_component_vec2: {
-    args: ["uint32_t", "uint32_t", "pointer", "pointer"],
-    returns: "bool",
-  },
+  // Generic vec2 component helpers
+  flecs_entity_set_component_vec2: { args: ["uint32_t", "uint32_t", "float", "float"], returns: "bool" },
+  flecs_entity_get_component_vec2: { args: ["uint32_t", "uint32_t", "pointer", "pointer"], returns: "bool" },
 
-  // debug helpers
-  flecs_print_component_registry: { args: [], returns: "void" },
-  flecs_print_entity_components: { args: ["uint32_t"], returns: "void" },
+  // Entity lifecycle
+  flecs_entity_create: { args: ["cstring"], returns: "uint32_t" },
+  flecs_entity_destroy: { args: ["uint32_t"], returns: "bool" },
 
-  // direct component helpers
-  flecs_set_entity_position: { args: ["uint32_t", "float", "float"], returns: "bool" },
-  flecs_get_entity_position: { args: ["uint32_t", "pointer", "pointer"], returns: "bool" },
-  flecs_set_entity_velocity: { args: ["uint32_t", "float", "float"], returns: "bool" },
-  flecs_get_entity_velocity: { args: ["uint32_t", "pointer", "pointer"], returns: "bool" },
-  flecs_set_entity_destination: { args: ["uint32_t", "float", "float", "float"], returns: "bool" },
-  flecs_get_entity_destination: { args: ["uint32_t", "pointer", "pointer", "pointer"], returns: "bool" },
+  // Observer registration (callbacks not supported directly in Bun FFI)
+  // flecs_register_observer: { ... },
+  // System registration (callbacks not supported directly in Bun FFI)
+  // flecs_register_system: { ... },
 });
 
 console.log("Loaded libflecswrapper");

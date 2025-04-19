@@ -1,5 +1,14 @@
 {
     "files.associations": {
-        "*.unused": "c"
-    }
+        "*.nimble": "nimble",
+        "*.unused": "c",
+        "flecs_wrapper_system.h": "c",
+        "flecs_wrapper_entity.h": "c",
+        "flecs_wrapper_event.h": "c",
+        "flecs_wrapper_component.h": "c"
+    },
+    "clangd.fallbackFlags": [
+    "-I${workspaceFolder}/src/hxcore/flecs/flecs_wrapper/include",
+    "-I/my/include"
+]
 }

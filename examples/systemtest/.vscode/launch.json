@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch ScriptTest",
+            "name": "HXCPP",
             "type": "hxcpp",
             "request": "launch",
             
@@ -18,13 +18,7 @@
             //    "--scriptDir", "${workspaceFolder}/example/dist/scripts"
             // ]
             // so instead, we use a shell script to launch it:
-            "program": "${workspaceFolder}/examples/scripttest/launch.sh",
-        },
-        {
-            "name": "Launch SystemTest",
-            "type": "hxcpp",
-            "request": "launch",
-            "program": "${workspaceFolder}/examples/systemtest/out/SystemTest",
+            "program": "${workspaceFolder}/launch.sh",
         }
     ]
 }

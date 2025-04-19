@@ -1,0 +1,12 @@
+--cwd examples
+--next
+
+# build the systemtest app
+--cwd systemtest
+build.hxml
+--next
+
+--cwd ../
+--next
+
+--cmd echo "Done!"

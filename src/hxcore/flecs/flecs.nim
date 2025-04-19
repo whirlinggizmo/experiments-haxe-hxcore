@@ -71,12 +71,21 @@ proc flecs_entity_destroy*(entity_id: uint32): bool {.importc.}
 
 type
   FlecsObserverCallback* = proc(entity_id, component_id, event_id, callback_id: uint32) {.cdecl.}
+  TrampolineSystemCallback* = proc(entity_id: uint32, components: ptr pointer, num_components: uint32, callback_id: uint32) {.cdecl.}
+
 proc flecs_register_observer*(
   component_ids: ptr uint32,
   num_components: uint32,
   event_ids: ptr uint32,
   num_events: uint32,
   callback: FlecsObserverCallback,
+  callback_id: uint32
+): bool {.importc.}
+
+proc flecs_register_system*(
+  component_ids: ptr uint32,
+  num_components: uint32,
+  callback: TrampolineSystemCallback,
   callback_id: uint32
 ): bool {.importc.}
 
