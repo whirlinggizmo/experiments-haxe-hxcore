@@ -1,0 +1,12 @@
+--cwd examples
+--next
+
+# build the flecstest app
+--cwd flecstest
+build.hxml
+--next
+
+--cwd ../
+--next
+
+--cmd echo "Done!"

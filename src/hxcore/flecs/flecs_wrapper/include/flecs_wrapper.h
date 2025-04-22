@@ -29,8 +29,11 @@ extern "C"
     bool flecs_entity_add_component_by_name(uint32_t entity_id, const char *component_name);
     bool flecs_entity_remove_component(uint32_t entity_id, uint32_t component_id);
     bool flecs_entity_remove_component_by_name(uint32_t entity_id, const char *component_name);
+    bool flecs_entity_set_component_data(uint32_t entity_id, uint32_t component_id, const void *component_data_ptr);
+    const void* flecs_entity_get_component_data(uint32_t entity_id, uint32_t component_id);
 
     // Specific component helpers
+    /*
     bool flecs_entity_set_velocity(uint32_t entity_id, float x, float y);
     bool flecs_entity_get_velocity(uint32_t entity_id, float *x, float *y);
     bool flecs_entity_set_position(uint32_t entity_id, float x, float y);
@@ -41,13 +44,14 @@ extern "C"
     // Generic vector2 component helpers
     bool flecs_entity_set_component_vec2(uint32_t entity_id, uint32_t component_id, float x, float y);
     bool flecs_entity_get_component_vec2(uint32_t entity_id, uint32_t component_id, float *x, float *y);
+    */
 
     // Entity lifecycle
     uint32_t flecs_entity_create(const char *name);
     bool flecs_entity_destroy(uint32_t entity_id);
 
     // Observer registration
-    typedef void (*ObserverCallback)(uint32_t entity_id, uint32_t component_id, uint32_t event_id, uint32_t callback_id);
+    typedef void (*ObserverCallback)(uint32_t entity_id, uint32_t component_id, uint32_t event_id, void* component_ptr, uint32_t component_size,uint32_t callback_id);
     bool flecs_register_observer(uint32_t *component_ids, uint32_t num_components, uint32_t *event_ids, uint32_t num_events, ObserverCallback callback, uint32_t callback_id);
 
     // System registration

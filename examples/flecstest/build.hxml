@@ -1,0 +1,34 @@
+
+
+-lib hxcore
+-cp src
+-cpp out
+
+
+# enable cppia
+#-D scriptable 
+
+-D HXCPP_M64
+-D HXCPP_CATCH_SEGV
+-D hxcpp_smart_strings
+
+# debugging
+--debug
+# vscode debugger
+-lib hxcpp-debug-server
+--dce no
+
+--define HAXE_OUTPUT_FILE=FlecsTest
+--main FlecsTest
+
+
+# copy the executable to the dist directory
+--cmd mkdir -p dist
+--cmd pkill -9 FlecsTest || true
+--cmd cp out/FlecsTest dist/FlecsTest
+
+
+--cmd echo ""
+--cmd echo "Build complete."
+
+

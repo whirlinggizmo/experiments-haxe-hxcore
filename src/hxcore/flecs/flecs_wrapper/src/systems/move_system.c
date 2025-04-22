@@ -5,13 +5,13 @@
 #include "../components/velocity.h"
 
 void MoveSystem(ecs_iter_t *it) {
-    printf("MoveSystem called for %d entities\n", it->count);
+    //printf("MoveSystem called for %d entities\n", it->count);
     Position *p = ecs_field(it, Position, 0);
     Velocity *v = ecs_field(it, Velocity, 1);
 
     for (int i = 0; i < it->count; i++) {
         if (v[i].x == 0 && v[i].y == 0) {
-            continue; // no movement
+           // continue; // no movement
         }
 
         float new_x = p[i].x + v[i].x * it->delta_time;

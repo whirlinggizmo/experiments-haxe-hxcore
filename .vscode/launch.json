@@ -25,6 +25,12 @@
             "type": "hxcpp",
             "request": "launch",
             "program": "${workspaceFolder}/examples/systemtest/out/SystemTest",
+        },
+        {
+            "name": "Launch FlecsTest",
+            "type": "hxcpp",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/flecstest/out/FlecsTest",
         }
     ]
 }

@@ -9,8 +9,8 @@
 
 #include "systems/trampoline_system.h"
 
-// defined in flecs_wrapper.c 
-extern ecs_world_t *world;
+#include "flecs_wrapper_world.h" // for world access
+
 
 static void free_trampoline_system_ctx(void *ctx)
 {

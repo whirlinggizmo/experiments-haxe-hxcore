@@ -21,6 +21,7 @@ extern "C"
         ObserverCallback callback,
         uint32_t callback_id);
 */
+void init_event_table(void);
 #ifdef __cplusplus
 }
 #endif

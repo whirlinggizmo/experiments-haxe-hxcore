@@ -2,25 +2,30 @@
 
 # header files are in lib/flecs/flecs_wrapper/include
 # source files are in lib/flecs/flecs_wrapper/src
+
 {.passC: "-Ilib/flecs/flecs_wrapper/include".}
 {.passC: "-I./include".} 
 {.passC: "-std=c99".} 
 {.passC: "-D_GNU_SOURCE".}
+
+# use the libflecs_wrapper.a
+#[
 {.passL: "-static".}
 {.passL: "-Llib/flecs/flecs_wrapper/lib".}
 {.passL: "-lflecs_wrapper".}
 {.passL: "-lm".} # order matters, link math after flecs
+]#
 
-
-#[
+# include the source directly
 {.compile: "flecs_wrapper/src/flecs.c".}
 {.compile: "flecs_wrapper/src/flecs_wrapper.c".}
+{.compile: "flecs_wrapper/src/flecs_wrapper_world.c".}
 {.compile: "flecs_wrapper/src/flecs_wrapper_entity.c".}
 {.compile: "flecs_wrapper/src/flecs_wrapper_component.c".}
 {.compile: "flecs_wrapper/src/flecs_wrapper_event.c".}
 {.compile: "flecs_wrapper/src/systems/move_system.c".}
 {.compile: "flecs_wrapper/src/systems/destination_system.c".}
-]#
+
 
 ## Event IDs (order matters since these are mapped in the flecs_wrapper.  Note that indecies start at 1, leaving 0 for  unknown event/error)
 #    FLECS_HI_COMPONENT_ID + 40, // EcsOnAdd
@@ -56,6 +61,7 @@ proc flecs_entity_add_component_by_name*(entity_id: uint32, name: cstring): bool
 proc flecs_entity_remove_component*(entity_id, component_id: uint32): bool {.importc.}
 proc flecs_entity_remove_component_by_name*(entity_id: uint32, name: cstring): bool {.importc.}
 
+#[
 proc flecs_entity_set_velocity*(entity_id: uint32, x, y: float32): bool {.importc.}
 proc flecs_entity_get_velocity*(entity_id: uint32, x, y: ptr float32): bool {.importc.}
 proc flecs_entity_set_position*(entity_id: uint32, x, y: float32): bool {.importc.}
@@ -65,13 +71,13 @@ proc flecs_entity_get_destination*(entity_id: uint32, x, y, speed: ptr float32):
 
 proc flecs_entity_set_component_vec2*(entity_id, component_id: uint32, x, y: float32): bool {.importc.}
 proc flecs_entity_get_component_vec2*(entity_id, component_id: uint32, x, y: ptr float32): bool {.importc.}
+]#
 
 proc flecs_entity_create*(name: cstring): uint32 {.importc.}
 proc flecs_entity_destroy*(entity_id: uint32): bool {.importc.}
 
 type
-  FlecsObserverCallback* = proc(entity_id, component_id, event_id, callback_id: uint32) {.cdecl.}
-  TrampolineSystemCallback* = proc(entity_id: uint32, components: ptr pointer, num_components: uint32, callback_id: uint32) {.cdecl.}
+  FlecsObserverCallback* = proc(entity_id, component_id, event_id : uint32, component_pointer: pointer, component_size: uint32, callback_id: uint32) {.cdecl.}
 
 proc flecs_register_observer*(
   component_ids: ptr uint32,
@@ -82,12 +88,16 @@ proc flecs_register_observer*(
   callback_id: uint32
 ): bool {.importc.}
 
+#[
+type
+  TrampolineSystemCallback* = proc(entity_id: uint32, components: ptr pointer, num_components: uint32, callback_id: uint32) {.cdecl.}
 proc flecs_register_system*(
   component_ids: ptr uint32,
   num_components: uint32,
   callback: TrampolineSystemCallback,
   callback_id: uint32
 ): bool {.importc.}
+]#
 
 proc flecs_init*() {.importc.}
 proc flecs_progress*(delta_time: float32) {.importc.}
@@ -96,9 +106,11 @@ proc flecs_version*(): cstring {.importc.}
 
 # Observer callback registry, implemented in Nim to help with ease of use
 import std/tables
+import std/strformat
 
 type
-  ObserverCallback = proc(entity, component, event: uint32) {.gcsafe.}
+  ObserverCallback = proc(entity, component, event: uint32, component_pointer: pointer, component_size: uint32) {.gcsafe.}
+  #SystemCallback = proc(entity: uint32, components: ptr pointer, num_components: uint32, callback_id: uint32) {.gcsafe.}
 
 # Internal state
 var
@@ -124,9 +136,9 @@ proc register_observer_callback(cb: ObserverCallback, id: uint32 = 0'u32): uint3
   return realId
 
 # Called from C — dispatches to registered Nim callbacks
-proc flecs_observer_trampoline(entity, component, event, callback_id: uint32) {.cdecl.} =
+proc flecs_observer_trampoline(entity, component, event: uint32, component_pointer: pointer, component_size: uint32, callback_id: uint32) {.cdecl.} =
   if cbMap.hasKey(callback_id):
-    cbMap[callback_id](entity, component, event)
+    cbMap[callback_id](entity, component, event, component_pointer, component_size)
   else:
     echo "⚠️ No callback registered for id ", callback_id
 

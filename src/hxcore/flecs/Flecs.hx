@@ -7,17 +7,53 @@ import cpp.Float32;
 import cpp.UInt32;
 import cpp.Pointer;
 
-typedef Vector2 = {x:Float, y:Float};
-typedef Vector3 = {x:Float, y:Float, z:Float};
-typedef ObserverCallbackCallable = cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, callbackId:UInt32) -> Void>;
-typedef ObserverCallback = (entityId:UInt32, componentId:UInt32, eventId:UInt32) -> Void;
+// Known components
+// see flecs_wrapper_components.h
 
-//typedef SystemCallbackCallable = cpp.Callable<(entityId:UInt32, componentPtrPtr:Pointer<Pointer<cpp.Void>>, numComponents:UInt32, callbackId:UInt32) -> Void>;
-//typedef SystemCallback = (entityId:UInt32, components:Pointer<Pointer<cpp.Void>>, numComponents:UInt32) -> Void;
+@:structAccess
+@:structInit
+@:nativeGen
+@:native("Position")
+class Position {
+	public var x:Float32;
+	public var y:Float32;
+}
 
-typedef SystemCallbackCallable = cpp.Callable<(entityId:UInt32, componentPtrPtr:cpp.RawPointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32, callbackId:UInt32) -> Void>;
+@:structAccess
+@:structInit
+@:nativeGen
+@:native("Velocity")
+class Velocity {
+	public var x:Float32;
+	public var y:Float32;
+}
+
+@:structAccess
+@:structInit
+@:nativeGen
+@:native("Destination")
+class Destination {
+	public var x:Float32;
+	public var y:Float32;
+	public var speed:Float32;
+}
+
+//
+
+typedef ObserverCallbackCallable = cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>,
+		componentSize:UInt32, callbackId:UInt32) -> Void>;
+
+typedef ObserverCallback = (entityId:UInt32, componentId:UInt32, eventId:UInt32, component:Dynamic) -> Void;
+
+// typedef SystemCallbackCallable = cpp.Callable<(entityId:UInt32, componentPtrPtr:Pointer<Pointer<cpp.Void>>, numComponents:UInt32, callbackId:UInt32) -> Void>;
+// typedef SystemCallback = (entityId:UInt32, components:Pointer<Pointer<cpp.Void>>, numComponents:UInt32) -> Void;
+
+typedef SystemCallbackCallable = cpp.Callable<(entityId:UInt32, componentPtrPtr:cpp.RawPointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32,
+		callbackId:UInt32) -> Void>;
+
 typedef SystemCallback = (entityId:UInt32, components:Array<Dynamic>, numComponents:UInt32) -> Void;
-//typedef SystemCallbackCFunc = (entityId:UInt32, componentPtr:Pointer<cpp.Void>, numComponents:UInt32, callbackId:UInt32) -> Void;
+
+// typedef SystemCallbackCFunc = (entityId:UInt32, componentPtr:Pointer<cpp.Void>, numComponents:UInt32, callbackId:UInt32) -> Void;
 
 class ObserverCallbackRegistry {
 	static var nextCallbackId:Int32 = 1; // reserve 0 for invalid id
@@ -48,43 +84,44 @@ class ObserverCallbackRegistry {
 		return id;
 	}
 
-	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, callbackId:UInt32):Void {
+	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32,
+			callbackId:UInt32):Void {
 		// Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
 		var cb = cbMap.get(callbackId);
 		if (cb != null) {
-			cb(eventId, componentId, eventId);
+			trace("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
+			// convert componentPtr to component
+			var component:Dynamic = null;
+			final positionComponentId = 1;
+			final velocityComponentId = 2;
+
+			if (componentId == positionComponentId) {
+				// convert componentPtrArray to Vector2
+				var vecPtr:cpp.RawPointer<Position> = cast componentPtr;
+				var vec:Position = vecPtr[0];
+				component = {x: vec.x, y: vec.y};
+				trace('Position: (${vec.x}, ${vec.y})');
+			}
+
+			cb(eventId, componentId, eventId, component);
 		} else {
 			Log.warn("no callback registered for id: " + callbackId);
 		}
 	}
 }
 
-@:structAccess
-@:nativeGen
-@:native("Vector2Native")
-class Vector2Native {
-    public var x:Float32;
-    public var y:Float32;
-}
-
 class SystemCallbackRegistry {
-    static var nextCallbackId:Int = 1;
-    static var cbMap:Map<Int, SystemCallback> = new Map();
+	static var nextCallbackId:Int = 1;
+	static var cbMap:Map<Int, SystemCallback> = new Map();
 
-    public static function register(cb:SystemCallback):Int {
-        var id = nextCallbackId++;
-        cbMap.set(id, cb);
-        return id;
-    }
+	public static function register(cb:SystemCallback):Int {
+		var id = nextCallbackId++;
+		cbMap.set(id, cb);
+		return id;
+	}
 
-	
-    public static function trampoline(
-        entityId:UInt32,
-        componentPtrPtr:cpp.RawPointer<cpp.RawPointer<cpp.Void>>,
-        numComponents:UInt32,
-        callbackId:UInt32
-    ):Void {
-        var cb = cbMap.get(callbackId);
+	public static function trampoline(entityId:UInt32, componentPtrPtr:cpp.RawPointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32, callbackId:UInt32):Void {
+		var cb = cbMap.get(callbackId);
 		if (cb == null) {
 			Log.warn("no callback registered for id: " + callbackId);
 			return;
@@ -94,19 +131,16 @@ class SystemCallbackRegistry {
 
 		var components = new Array<Dynamic>();
 		for (i in 0...numComponents) {
-
 			// This is hard coded right now for testing the system.
 			// It assumes that the components are all Vector2
 			// TODO: Fix this to be more generic
-			var vecPtr:RawPointer<Vector2Native> = cast componentPtrPtr[i];	
-			var vec:Vector2Native = vecPtr[0];
+			var vecPtr:cpp.RawPointer<Position> = cast componentPtrPtr[i];
+			var vec:Position = vecPtr[0];
 			components.push({x: vec.x, y: vec.y});
 		}
-        cb(entityId, components, numComponents);
-		
-    }
+		cb(entityId, components, numComponents);
+	}
 }
-
 
 /* 
 	// Working buildXml for linking a static lib!
@@ -139,6 +173,8 @@ class SystemCallbackRegistry {
   -->
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_component.c" />
+  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_components.c" />
+  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_world.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_entity.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_event.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_system.c" />
@@ -150,7 +186,6 @@ class SystemCallbackRegistry {
 @:headerInclude('flecs_wrapper.h')
 @:keep
 @:expose
-
 class Flecs {
 	// Version
 	@:native("flecs_version") extern static function _flecs_version():String;
@@ -196,6 +231,13 @@ class Flecs {
 	// TODO:  Add component registrations
 	@:native("flecs_register_component") extern static function _flecs_register_component(name:String, size:UInt32):UInt32;
 
+	@:native("flecs_entity_set_component_data") extern static function _flecs_entity_set_component_data(entityIndex:UInt32, componentId:UInt32,
+		componentDataPtr:Pointer<cpp.Void>):Bool;
+
+	@:native("flecs_entity_get_component_data") extern static function _flecs_entity_get_component_data(entityIndex:UInt32,
+		componentId:UInt32):Pointer<cpp.Void>;
+
+	/*
 	// Component: Vec2 generic
 	@:native("flecs_entity_set_component_vec2") extern static function _flecs_entity_set_component_vec2(entityIndex:UInt32, componentId:UInt32, x:Float32,
 		y:Float32):Bool;
@@ -220,7 +262,8 @@ class Flecs {
 
 	@:native("flecs_entity_get_destination") extern static function _flecs_entity_get_destination(entityIndex:UInt32, x:cpp.Pointer<Float32>,
 		y:cpp.Pointer<Float32>, speed:cpp.Pointer<Float32>):Bool;
-
+	*/
+	
 	// Observer registration
 	@:native("flecs_register_observer") extern static function _flecs_register_observer(componentIds:cpp.Pointer<UInt32>, numComponents:UInt32,
 		eventIds:cpp.Pointer<UInt32>, numEvents:UInt32, callback:ObserverCallbackCallable, callbackId:UInt32):Bool;
@@ -229,7 +272,6 @@ class Flecs {
 	@:native("flecs_register_system") extern static function _flecs_register_system(name:String, components:cpp.Pointer<UInt32>, numComponents:UInt32,
 		callback:SystemCallbackCallable, callbackId:UInt32):Bool;
 
-	
 	// Public-friendly API
 	// see flecs wrapper
 	static public final EcsUnknown:UInt32 = 0;
@@ -298,18 +340,29 @@ class Flecs {
 	public static function isComponentMarkedChangedByName(entity:Int32, name:String):Bool
 		return _flecs_component_is_mark_changed_by_name(entity, name);
 
-	// Vec2 generic
-	public static function setComponentVec2(entity:Int32, componentId:Int32, x:Float, y:Float):Bool
-		return _flecs_entity_set_component_vec2(entity, componentId, x, y);
+	// Component data getter/setter
+	public static function setComponentData(entity:Int32, componentId:Int32, component:Dynamic):Bool
+		return _flecs_entity_set_component_data(entity, componentId, component);
 
-	public static function getComponentVec2(entity:Int32, componentId:Int32):Vector2 {
-		var xArr:Array<Float32> = [0.0];
-		var yArr:Array<Float32> = [0.0];
-		var ok:Bool = _flecs_entity_get_component_vec2(entity, componentId, cpp.Pointer.ofArray(xArr), cpp.Pointer.ofArray(yArr));
-
-		return ok ? {x: xArr[0], y: yArr[0]} : null;
+	public static function getComponentData(entity:Int32, componentId:Int32):Dynamic
+		return _flecs_entity_get_component_data(entity, componentId);
+	
+	/*
+	// Vector2 generic
+	public static function setComponentDataVector2(entity:Int32, componentId:Int32, x:Float, y:Float):Bool {
+		var vec2:Vector2 = {x: x, y: y};
+		return _flecs_entity_set_component_data(entity, componentId, vec2);
 	}
 
+	public static function getComponentDataVector2(entity:Int32, componentId:Int32):Vector2 {
+		var vec2:Vector2 = {x: 0.0, y: 0.0};
+		var data = _flecs_entity_get_component_data(entity, componentId);
+
+		return data ? cast(data, Vector2) : null;
+	}
+	*/
+	
+	/*
 	// Position
 	public static function setPosition(entity:Int32, x:Float, y:Float):Bool
 		return _flecs_entity_set_position(entity, x, y);
@@ -346,6 +399,7 @@ class Flecs {
 
 		return ok ? {x: xArr[0], y: yArr[0], speed: speedArr[0]} : null;
 	}
+	*/
 
 	// Observer
 	public static function registerObserver(componentIds:Array<Int32>, eventIds:Array<Int32>, callback:ObserverCallback):Bool {
@@ -378,14 +432,14 @@ class Flecs {
 	}
 
 	// System
-	 public static function registerSystem(name:String, cb:SystemCallback, componentIds:Array<Int>):Bool {
+	public static function registerSystem(name:String, cb:SystemCallback, componentIds:Array<Int>):Bool {
 		var callbackId = SystemCallbackRegistry.register(cb);
 		var numComponents = componentIds.length;
 		var arr = new Array<cpp.UInt32>();
-		for (i in 0...componentIds.length) arr.push(componentIds[i]);
+		for (i in 0...componentIds.length)
+			arr.push(componentIds[i]);
 		var ptr = cpp.Pointer.arrayElem(arr, 0);
 		var trampoline = cpp.Callable.fromStaticFunction(SystemCallbackRegistry.trampoline);
 		return _flecs_register_system(name, ptr, numComponents, trampoline, callbackId);
 	}
-
 }

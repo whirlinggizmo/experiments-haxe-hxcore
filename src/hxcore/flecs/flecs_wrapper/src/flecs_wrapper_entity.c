@@ -4,9 +4,7 @@
 #include "flecs.h"
 #include "flecs_wrapper.h"
 
-// defined in flecs_wrapper.c 
-extern ecs_world_t *world;
-
+#include "flecs_wrapper_world.h" // for world access
 
 // components
 

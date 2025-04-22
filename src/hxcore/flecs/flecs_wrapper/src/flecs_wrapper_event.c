@@ -7,31 +7,24 @@
 #include "flecs_wrapper_component.h"
 #include "flecs_wrapper_entity.h"
 
-// defined in flecs_wrapper.c 
-extern ecs_world_t *world;
+#include "flecs_wrapper_world.h" // for world access
+
 
 // there are fixed number of event types, so we'll just add them directly
 #define event_ecs_id_count 8
-static ecs_entity_t event_ecs_id_table[event_ecs_id_count] = { // lookup table for event_id -> event_ecs_id
-    /*
-    // Reference: Events, taken from flecs world.c  Note that the order matters, since it's used to index into the event_id_table
-    const ecs_entity_t EcsOnAdd =                       FLECS_HI_COMPONENT_ID + 40;
-    const ecs_entity_t EcsOnRemove =                    FLECS_HI_COMPONENT_ID + 41;
-    const ecs_entity_t EcsOnSet =                       FLECS_HI_COMPONENT_ID + 42;
-    const ecs_entity_t EcsOnDelete =                    FLECS_HI_COMPONENT_ID + 43;
-    const ecs_entity_t EcsOnDeleteTarget =              FLECS_HI_COMPONENT_ID + 44;
-    const ecs_entity_t EcsOnTableCreate =               FLECS_HI_COMPONENT_ID + 45;
-    const ecs_entity_t EcsOnTableDelete =               FLECS_HI_COMPONENT_ID + 46;
-    */
-    0,                          // leave starting index 0 empty for unknown
-    FLECS_HI_COMPONENT_ID + 40, // EcsOnAdd
-    FLECS_HI_COMPONENT_ID + 41, // EcsOnRemove
-    FLECS_HI_COMPONENT_ID + 42, // EcsOnSet
-    FLECS_HI_COMPONENT_ID + 43, // EcsOnDelete
-    FLECS_HI_COMPONENT_ID + 44, // EcsOnDeleteTarget
-    FLECS_HI_COMPONENT_ID + 45, // EcsOnTableCreate
-    FLECS_HI_COMPONENT_ID + 46, // EcsOnTableDelete
-};
+static ecs_entity_t event_ecs_id_table[8];   /* 0..7 */
+
+void init_event_table(void) {
+    event_ecs_id_table[0] = 0;
+    event_ecs_id_table[1] = EcsOnAdd;
+    event_ecs_id_table[2] = EcsOnRemove;
+    event_ecs_id_table[3] = EcsOnSet;
+    event_ecs_id_table[4] = EcsOnDelete;
+    event_ecs_id_table[5] = EcsOnDeleteTarget;
+    event_ecs_id_table[6] = EcsOnTableCreate;
+    event_ecs_id_table[7] = EcsOnTableDelete;
+    printf("Event table initialized\n");
+}
 
 uint32_t get_event_id(const ecs_entity_t ecs_id)
 {
@@ -57,6 +50,9 @@ ecs_entity_t get_event_ecs_id(uint32_t event_id)
 }
 
 // observer
+// defined in flecs_wrapper_event.h
+// typedef void (*ObserverCallback)(uint32_t entity_id, uint32_t component_id, uint32_t event_id, void* component_ptr, uint32_t component_size,uint32_t callback_id);
+
 typedef struct ObserverCallbackContext
 {
     ObserverCallback callback;
@@ -66,19 +62,40 @@ typedef struct ObserverCallbackContext
 // A simple static callback that is registered with flecs observers.
 static void on_observed_component_changed(ecs_iter_t *it)
 {
-    // printf("Observer callback invoked for %d entities\n", it->count);
-    for (int i = 0; i < it->count; i++)
-    {
-        uint32_t entity_id = get_entity_id(it->entities[i]);
-        uint32_t component_id = get_component_id(it->event_id);
-        uint32_t event_id = get_event_id(it->event);
 
-        const ObserverCallbackContext *cb_ctx = it->callback_ctx;
-        if (cb_ctx && cb_ctx->callback)
-        {
-            // invoke the callback
-            // printf("Invoking callback %p\n", cb_ctx->callback);
-            cb_ctx->callback(entity_id, component_id, event_id, cb_ctx->callback_id);
+    // find out which field/term matches the event component
+    int8_t t = -1;
+    for (int8_t fi = 0; fi < it->field_count; fi++) {
+        if (ecs_field_id(it, fi) == it->event_id) {
+            t = fi;
+            break;
+        }
+    }
+    if (t == -1) {
+        /* Shouldn’t happen, but bail safely */
+        return;
+    }
+
+    size_t size = ecs_field_size(it, t);          
+    void  *column = ecs_field_w_size(it, 0, t);   /* pass 0 = “don’t check” */
+
+
+    uint32_t component_id = get_component_id(it->event_id);
+    uint32_t event_id = get_event_id(it->event);
+
+    //const ComponentInfo *ci = get_component_info(cid);
+    //size_t   size = ci->size;
+    //void *column = ecs_field_w_size(it, size, 0);   /* term 0 */
+
+    for (int i = 0; i < it->count; i++) {
+        uint32_t entity_id   = get_entity_id(it->entities[i]);
+
+        void *comp_i = (char*)column + i * size;
+
+        const ObserverCallbackContext *ctx = it->callback_ctx;
+        if (ctx && ctx->callback) {
+            //printf("Entity: %u Component: %s Event: %s Size: %zu\n", entity_id, ecs_get_name(world, it->event_id), ecs_get_name(world, it->event), size);
+            ctx->callback(entity_id, component_id, event_id, comp_i, (uint32_t)size, ctx->callback_id);
         }
     }
 }
@@ -102,11 +119,11 @@ bool register_observer(
     ObserverCallback callback,
     uint32_t callback_id)
 {
-    printf("Registering observer for %d components\n", num_components);
+    //printf("Registering observer for %d components\n", num_components);
 
     if (num_components >= FLECS_TERM_COUNT_MAX)
     {
-        printf("Too many terms! Max allowed: %d\n", FLECS_TERM_COUNT_MAX);
+        fprintf(stderr, "Too many terms! Max allowed: %d\n", FLECS_TERM_COUNT_MAX);
         return false;
     }
 
@@ -129,7 +146,7 @@ bool register_observer(
         const ComponentInfo *component_info = get_component_info(component_ids[i]);
         if (component_info == NULL)
         {
-            printf("Unabled to register observer (component_id %u not found)\n", component_ids[i]);
+            fprintf(stderr, "Unabled to register observer (component_id %u not found)\n", component_ids[i]);
             return false;
         }
         desc.query.terms[i].id = component_info->ecs_id;
