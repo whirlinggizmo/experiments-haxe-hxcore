@@ -51,15 +51,4 @@ class FlecsTest {
         Flecs.fini();
     }
 
-    // System callback: receives entityId, pointer array, and count
-    static function testSystemCallback(
-        entityId:UInt32,
-        components:Array<Dynamic>,
-        numComponents:UInt32
-    ):Void {
-        //trace('testSystemCallback called for entity $entityId with $numComponents components');
-        trace('Position: (${components[0].x}, ${components[0].y})');
-
-        //Flecs.setPosition(entityId, components[0].x + components[1].x, components[0].y + components[1].y);
-    }
 }

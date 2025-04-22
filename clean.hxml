@@ -4,3 +4,9 @@
 
 --cmd rm -rf  examples/scripttest/out
 --cmd rm -rf  examples/scripttest/dist
+
+--cmd rm -rf  examples/flecstest/out
+--cmd rm -rf  examples/flecstest/dist
+
+--cmd haxelib run hxcpp cache clear
+

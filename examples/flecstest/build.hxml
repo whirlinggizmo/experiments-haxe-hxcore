@@ -6,6 +6,7 @@
 
 
 # enable cppia
+# BUG:  The callback signatures for flecs fail when enabling cppia (host)
 #-D scriptable 
 
 -D HXCPP_M64

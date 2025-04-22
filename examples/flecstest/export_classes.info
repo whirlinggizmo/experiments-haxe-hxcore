@@ -35,9 +35,10 @@ class hxcpp.debug.jsonrpc.Macro
 class hxcore.logging.Log
 class hxcore.logging._Log.LogLevel_Impl_
 class hxcore.flecs.Flecs
-class hxcore.flecs.SystemCallbackRegistry
 class hxcore.flecs.ObserverCallbackRegistry
-class hxcore.flecs.Vector2Native
+class Destination
+class Velocity
+class Position
 enum haxe.macro.TypedExprDef
 enum haxe.macro.FieldAccess
 enum haxe.macro.ModuleType
@@ -147,7 +148,6 @@ class cpp._Int64.Int64_Impl_
 class _UInt.UInt_Impl_
 class Type
 enum ValueType
-class SystemTest
 class Sys
 class StringTools
 class haxe.SysTools
@@ -155,6 +155,7 @@ class StringBuf
 class Std
 class Reflect
 class IntIterator
+class FlecsTest
 class _EnumValue.EnumValue_Impl_
 class EReg
 class Date
@@ -232,7 +233,7 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/StringKeyValueIt
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/macro/Expr.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/macro/Expr.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/EventLoop.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/EventLoop.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/NoEventLoopException.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/NoEventLoopException.hx
-file SystemTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/systemtest/src/SystemTest.hx
+file FlecsTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/flecstest/src/FlecsTest.hx
 file hxcore/flecs/Flecs.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/flecs/Flecs.hx
 file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
 file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/.vscode/extensions/vshaxe.hxcpp-debugger-1.2.4/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx

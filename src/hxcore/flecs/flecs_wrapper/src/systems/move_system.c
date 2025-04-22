@@ -1,8 +1,8 @@
 // move_system.c
 
 #include "flecs.h"
-#include "../components/position.h"
-#include "../components/velocity.h"
+#include "flecs_wrapper_components.h"
+#include "systems/move_system.h"
 
 void MoveSystem(ecs_iter_t *it) {
     //printf("MoveSystem called for %d entities\n", it->count);

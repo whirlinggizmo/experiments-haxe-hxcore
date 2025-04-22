@@ -45,15 +45,12 @@ typedef ObserverCallbackCallable = cpp.Callable<(entityId:UInt32, componentId:UI
 
 typedef ObserverCallback = (entityId:UInt32, componentId:UInt32, eventId:UInt32, component:Dynamic) -> Void;
 
-// typedef SystemCallbackCallable = cpp.Callable<(entityId:UInt32, componentPtrPtr:Pointer<Pointer<cpp.Void>>, numComponents:UInt32, callbackId:UInt32) -> Void>;
-// typedef SystemCallback = (entityId:UInt32, components:Pointer<Pointer<cpp.Void>>, numComponents:UInt32) -> Void;
-
+/*
 typedef SystemCallbackCallable = cpp.Callable<(entityId:UInt32, componentPtrPtr:cpp.RawPointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32,
 		callbackId:UInt32) -> Void>;
 
 typedef SystemCallback = (entityId:UInt32, components:Array<Dynamic>, numComponents:UInt32) -> Void;
-
-// typedef SystemCallbackCFunc = (entityId:UInt32, componentPtr:Pointer<cpp.Void>, numComponents:UInt32, callbackId:UInt32) -> Void;
+*/
 
 class ObserverCallbackRegistry {
 	static var nextCallbackId:Int32 = 1; // reserve 0 for invalid id
@@ -110,6 +107,7 @@ class ObserverCallbackRegistry {
 	}
 }
 
+/*
 class SystemCallbackRegistry {
 	static var nextCallbackId:Int = 1;
 	static var cbMap:Map<Int, SystemCallback> = new Map();
@@ -141,6 +139,7 @@ class SystemCallbackRegistry {
 		cb(entityId, components, numComponents);
 	}
 }
+*/
 
 /* 
 	// Working buildXml for linking a static lib!
@@ -168,19 +167,18 @@ class SystemCallbackRegistry {
 <files id="haxe">
   <compilerflag value="-I${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/include"/>
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs.c" />
-  <!--
-  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper.monolith.c" />
-  -->
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_component.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_components.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_world.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_entity.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_event.c" />
-  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_system.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/systems/destination_system.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/systems/move_system.c" />
+  <!--
+  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_system.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/systems/trampoline_system.c" />
+  -->
 </files>
 ')
 @:headerInclude('flecs_wrapper.h')
@@ -269,8 +267,10 @@ class Flecs {
 		eventIds:cpp.Pointer<UInt32>, numEvents:UInt32, callback:ObserverCallbackCallable, callbackId:UInt32):Bool;
 
 	// System registration
+	/*
 	@:native("flecs_register_system") extern static function _flecs_register_system(name:String, components:cpp.Pointer<UInt32>, numComponents:UInt32,
 		callback:SystemCallbackCallable, callbackId:UInt32):Bool;
+	*/
 
 	// Public-friendly API
 	// see flecs wrapper
@@ -361,7 +361,7 @@ class Flecs {
 		return data ? cast(data, Vector2) : null;
 	}
 	*/
-	
+
 	/*
 	// Position
 	public static function setPosition(entity:Int32, x:Float, y:Float):Bool
@@ -432,6 +432,7 @@ class Flecs {
 	}
 
 	// System
+	/*
 	public static function registerSystem(name:String, cb:SystemCallback, componentIds:Array<Int>):Bool {
 		var callbackId = SystemCallbackRegistry.register(cb);
 		var numComponents = componentIds.length;
@@ -442,4 +443,5 @@ class Flecs {
 		var trampoline = cpp.Callable.fromStaticFunction(SystemCallbackRegistry.trampoline);
 		return _flecs_register_system(name, ptr, numComponents, trampoline, callbackId);
 	}
+	*/
 }

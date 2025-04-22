@@ -2,7 +2,7 @@
 #include "flecs.h"
 #include <stdint.h>
 
-#include "trampoline_system.h"
+#include "systems/trampoline_system.h"
 #include "flecs_wrapper_component.h"
 #include "flecs_wrapper_entity.h"
 

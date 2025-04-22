@@ -1,12 +1,10 @@
 // destination_system.c
 #include "flecs.h"
 
-#include "../components/position.h"
-#include "../components/velocity.h"
-#include "../components/destination.h"
+#include "flecs_wrapper_components.h"
+#include "systems/destination_system.h"
 
 #include <math.h>
-#include <stdio.h>
 
 #define DEST_EPSILON 0.01f
 #define MIN_MOVE_DISTANCE 0.0001f
