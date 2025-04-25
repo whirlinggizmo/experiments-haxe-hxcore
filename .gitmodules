@@ -1,0 +1,3 @@
+[submodule "src/hxcore/flecs/flecs_wrapper"]
+	path = src/hxcore/flecs/flecs_wrapper
+	url = git@github.com:whirlinggizmo/experiments-flecs_wrapper.git
