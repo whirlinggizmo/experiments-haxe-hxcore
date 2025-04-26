@@ -6,18 +6,20 @@
 
 
 # enable cppia
-# BUG:  The callback signatures for flecs fail when enabling cppia (host)
-#-D scriptable 
+-D scriptable 
 
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV
 -D hxcpp_smart_strings
 
 # debugging
---debug
+#--debug
 # vscode debugger
--lib hxcpp-debug-server
---dce no
+#-lib hxcpp-debug-server
+#--dce no
+
+--dce full
+-D analyzer-optimize
 
 --define HAXE_OUTPUT_FILE=FlecsTest
 --main FlecsTest

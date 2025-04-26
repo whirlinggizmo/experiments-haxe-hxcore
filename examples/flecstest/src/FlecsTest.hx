@@ -1,7 +1,15 @@
 import hxcore.flecs.Flecs;
 import cpp.UInt32;
+import cpp.Float32;
 import hxcore.logging.Log;
 
+//@:structAccess
+@:structInit
+//@:nativeGen
+class Pos {
+    var x:Float32;
+    var y:Float32;
+}
 
 class FlecsTest {
     public static function main() {
@@ -13,6 +21,7 @@ class FlecsTest {
         final VelocityId:Int = Flecs.getComponentId("Velocity");
         final DestinationId:Int = Flecs.getComponentId("Destination");
 
+       /*
         Flecs.registerObserver([PositionId, VelocityId, DestinationId], [Flecs.EcsOnSet], (entityId:UInt32, componentId:UInt32, eventId:UInt32, component:Dynamic) -> {
             if (componentId == PositionId) {
                 // convert componentPtr to Vector2
@@ -21,7 +30,7 @@ class FlecsTest {
                 //trace('Position: (${vec.x}, ${vec.y})');
             }
         });
-
+*/
 
         // Register the system for entities with Position
        //Flecs.registerSystem("TestSystem", testSystemCallback, [positionComponentId, velocityComponentId]);
@@ -31,21 +40,21 @@ class FlecsTest {
         Flecs.addComponent(entityId, PositionId);
         Flecs.addComponent(entityId, VelocityId);
 
-        //Flecs.setComponentData(entityId, positionComponentId, &{x: 0.0, y: 0.0});
-        //Flecs.setComponentData(entityId, velocityComponentId, &{x: 1.0, y: 1.0});
-        
-        //Flecs.setVelocity(entityId, 1.0, 1.0);
-        //Flecs.setPosition(entityId, 0.0, 0.0);
         var pos:Position = {x: 0.0, y: 0.0};
         var vel:Velocity = {x: 1.0, y: 1.0};
-        Flecs.setComponentData(entityId, PositionId, pos);
-        Flecs.setComponentData(entityId, VelocityId, vel);
+        Flecs.setComponent(entityId, PositionId, pos);
+        Flecs.setComponent(entityId, VelocityId, vel);
 
         // Run the Flecs loop
         
         // loop for 1000 times, simulating 60 FPS
         for (i in 0...1000) {
             Flecs.progress(0); // Simulate 60 FPS
+            //var pos:Position = Flecs.getComponent(entityId, PositionId);
+            var posPtr:cpp.Pointer<Position> = Flecs.getComponentPtr(entityId, PositionId);
+            trace('Position: (${posPtr.ref.x}, ${posPtr.ref.y})');
+            posPtr.ref.x += 50;
+            
         }
 
         Flecs.fini();

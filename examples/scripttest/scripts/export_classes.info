@@ -73,10 +73,6 @@ class hxcore.logging._Log.LogLevel_Impl_
 class hxcore.io._FileWatcher.FileWatcher_Fields_
 class hxcore.io.FileWatcher
 enum hxcore.io.FileEvent
-class hxcore.flecs.SystemCallbackRegistry
-class hxcore.flecs.Flecs
-class hxcore.flecs.ObserverCallbackRegistry
-class hxcore.flecs.Vector2Native
 class hxcore.events.EventEmitter
 class hxcore.ecs.EntityManager
 class hxcore.ecs.EIDGenerator
@@ -129,7 +125,6 @@ class haxe.iterators.RestIterator
 class haxe.iterators.MapKeyValueIterator
 class haxe.iterators.HashMapKeyValueIterator
 class haxe.iterators.ArrayKeyValueIterator
-class haxe.io._UInt32Array.UInt32Array_Impl_
 class haxe.io.StringInput
 class haxe.io.Path
 class haxe.io.FPHelper
@@ -142,8 +137,6 @@ class haxe.io.BytesInput
 class haxe.io.BytesBuffer
 class haxe.io.BufferInput
 class haxe.io.Input
-class haxe.io._ArrayBufferView.ArrayBufferView_Impl_
-class haxe.io.ArrayBufferViewImpl
 class haxe.format.JsonPrinter
 class haxe.format.JsonParser
 class haxe.exceptions.NotImplementedException
@@ -232,7 +225,6 @@ class cpp._Int64.Int64_Impl_
 class cpp.Finalizable
 class Xml
 class _Xml.XmlType_Impl_
-class _UInt.UInt_Impl_
 class Type
 enum ValueType
 class Sys
@@ -253,7 +245,6 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/EnumValue.hx /home/rknopf/toolc
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/IntIterator.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/IntIterator.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/Lambda.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/Lambda.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/StringTools.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/StringTools.hx
-file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/UInt.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/UInt.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/Xml.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/Xml.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/Finalizable.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/Finalizable.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/Int64.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/Int64.hx
@@ -343,7 +334,6 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/exceptions/NotImplementedE
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/exceptions/PosException.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/exceptions/PosException.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/format/JsonParser.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/format/JsonParser.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/format/JsonPrinter.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/format/JsonPrinter.hx
-file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/ArrayBufferView.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/ArrayBufferView.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/BufferInput.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/BufferInput.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Bytes.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Bytes.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/BytesBuffer.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/BytesBuffer.hx
@@ -355,7 +345,6 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Input.hx /home/rknopf/t
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Output.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Output.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Path.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Path.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/StringInput.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/StringInput.hx
-file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/UInt32Array.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/UInt32Array.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayIterator.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayIterator.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayKeyValueIterator.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayKeyValueIterator.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/HashMapKeyValueIterator.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/HashMapKeyValueIterator.hx
@@ -376,8 +365,6 @@ file hxcore/ecs/Entity.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/h
 file hxcore/ecs/EntityID.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/EntityID.hx
 file hxcore/ecs/EntityManager.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/EntityManager.hx
 file hxcore/events/EventEmitter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/events/EventEmitter.hx
-file hxcore/flecs/Flecs.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/flecs/Flecs.hx
-file hxcore/flecs/SystemCallbackRegistry.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/flecs/SystemCallbackRegistry.hx
 file hxcore/io/FileWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/io/FileWatcher.hx
 file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
 file hxcore/scripting/Script.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/Script.hx
