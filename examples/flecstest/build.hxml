@@ -6,7 +6,9 @@
 
 
 # enable cppia
--D scriptable 
+#urgh.. some issues with hxcpp changing types when scriptable is enabled
+# WIP: ObservableCallback (works with RawPointer, but that doesn't work with scriptable?)
+#-D scriptable 
 
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV

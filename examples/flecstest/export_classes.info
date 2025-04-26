@@ -2,10 +2,13 @@ class hxcore.logging.Log
 class hxcore.logging._Log.LogLevel_Impl_
 class Velocity
 class Position
+class hxcore.flecs.ObserverCallbackRegistry
 class hxcore.flecs.Flecs
 class haxe.iterators.ArrayIterator
 class haxe.io.Path
+class haxe.ds.IntMap
 class haxe.Log
+interface haxe.IMap
 class Sys
 class StringTools
 class StringBuf
@@ -18,6 +21,7 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Std.hx /home/rknopf/to
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/StringBuf.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/StringBuf.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Sys.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Sys.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/Log.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/Log.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/ds/IntMap.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/ds/IntMap.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Path.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Path.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayIterator.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayIterator.hx
 file FlecsTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/flecstest/src/FlecsTest.hx
