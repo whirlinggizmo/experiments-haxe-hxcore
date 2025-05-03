@@ -6,6 +6,11 @@ import hxcore.logging.Log;
 import hxcore.util.TypeUtils;
 import hxcore.scripting.Script;
 
+//
+// NOTE:  This code is **very** stale, work has been focused on the cpp version
+// TODO:  Update this?
+//
+
 class ScriptLoader {
 	private static var scriptCache:Map<String, Script> = new Map<String, Script>();
 	public static var scriptDirectory:String = "./scripts/";
