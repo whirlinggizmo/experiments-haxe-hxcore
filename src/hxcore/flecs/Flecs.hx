@@ -4,7 +4,17 @@ import cpp.Float32;
 import cpp.UInt32;
 import cpp.UInt64;
 
-typedef SystemCallback = cpp.Callable<cpp.Pointer<UInt64>->UInt32->cpp.Pointer<cpp.Pointer<cpp.Void>>->UInt32->Float32->UInt32->Void>;
+// Type alias for pointer-sized unsigned integer
+#if cpp_64
+typedef UIntPtr = cpp.UInt64;
+#else
+typedef UIntPtr = cpp.UInt32;
+#end
+
+// Type alias for pointers to UInt64
+typedef UInt64Ptr = cpp.Pointer<UInt64>;
+
+typedef SystemCallback = cpp.Callable<UInt64Ptr->UInt32->cpp.Pointer<cpp.Pointer<cpp.Void>>->UInt32->Float32->UInt32->Void>;
 
 @:buildXml('
 <echo value="Compiling Flecs (wrapper)..." />
@@ -136,7 +146,7 @@ class Flecs {
 
 	@:native("flecs_register_observer")
 	extern static function flecs_register_observer(componentIds:cpp.Pointer<UInt32>, numComponents:UInt32, eventIds:cpp.Pointer<UInt32>, numEvents:UInt32,
-		callback:ObserverCallbackCallable, callbackId:UInt32):Bool;
+		callback:cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32, callbackId:UInt32) -> Void>, callbackId:UInt32):Bool;
 
 	public static function registerObserver(componentIds:Array<UInt32>, eventIds:Array<UInt32>, callback:ObserverCallbackHandler):Bool {
 		if (componentIds == null)
@@ -158,21 +168,27 @@ class Flecs {
 			eventsArray.push(id);
 		}
 
-		// since C wants a static function pointer, we pass it the static trampoline function from CallbackRegistry.
-		// the trampoline function will will lookup the actual function (based on the callback_id), and call it.
-		final trampoline:ObserverCallbackCallable = cpp.Callable.fromStaticFunction(ObserverCallbackRegistry.trampoline);
 		final callbackId = ObserverCallbackRegistry.register(callback);
+		final compArrPtr = cpp.Pointer.ofArray(componentsArr);
+		final compArrLen = componentsArr.length;
+		final eventArrPtr = cpp.Pointer.ofArray(eventsArray);
+		final eventArrLen = eventsArray.length;
 
-		return flecs_register_observer(cpp.Pointer.ofArray(componentsArr), componentsArr.length, cpp.Pointer.ofArray(eventsArray), eventsArray.length,
-			trampoline, callbackId);
+		// HACK: Call C function directly using untyped __cpp__ and cast trampoline func pointer
+		var result:cpp.UInt64 = 0; // Assuming C function returns UInt64 (ecs_entity_t)
+		untyped __cpp__(
+			"{5} = flecs_register_observer({0}, {1}, {2}, {3}, (void (*)(unsigned int, unsigned int, unsigned int, void*, unsigned int, unsigned int))hxcore::flecs::ObserverCallbackRegistry_obj::trampoline, {4})",
+			compArrPtr, compArrLen, eventArrPtr, eventArrLen, callbackId, result
+		);
+		return result != (cast 0 : cpp.UInt64); // Return true if result is non-zero (success)
 	}
-}
 
-typedef ObserverCallbackCallable = cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>,
-		componentSize:UInt32, callbackId:UInt32) -> Void>;
+	// ... rest of the code remains the same ...
+}
 
 typedef ObserverCallbackHandler = (entityId:UInt32, componentId:UInt32, eventId:UInt32, component:Dynamic) -> Void;
 
+@:keep
 class ObserverCallbackRegistry {
 	static var nextCallbackId:UInt32 = 1; // reserve 0 for invalid id
 	static var cbMap:Map<UInt32, ObserverCallbackHandler> = new Map();
@@ -202,28 +218,18 @@ class ObserverCallbackRegistry {
 		return id;
 	}
 
-	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32,
-			callbackId:UInt32):Void {
+	// HACK: Takes componentPtr as pointer-sized unsigned integer (UIntPtr) for Cppia compatibility
+	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:UIntPtr, componentSize:UInt32, callbackId:UInt32):Void {
 		// Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
 		var cb:ObserverCallbackHandler = cbMap.get(callbackId);
 		if (cb != null) {
-			trace("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
-			// convert componentPtr to component
-			var component:Dynamic = null;
-			final positionComponentId = 1;
-			final velocityComponentId = 2;
-
-			if (componentId == positionComponentId) {
-				// convert componentPtrArray to Vector2
-				var vecPtr:cpp.Pointer<Position> = cast componentPtr;
-				var vec:Position = vecPtr[0];
-				component = {x: vec.x, y: vec.y};
-				trace('Position: (${vec.x}, ${vec.y})');
-			}
-
-			//cb(eventId, componentId, eventId, component);
+			Log.debug("calling callback for id: " + callbackId);
+			// Convert UIntPtr (UInt32 or UInt64) back to void* using untyped __cpp__
+			var actualComponentPtr:cpp.RawPointer<cpp.Void> = untyped __cpp__("(void*){0}", componentPtr);
+			// Pass pointer (cast to Dynamic) to the actual handler
+			cb(entityId, componentId, eventId, cast actualComponentPtr);
 		} else {
-			Log.warn("no callback registered for id: " + callbackId);
+			Log.warn("no callback found for id: " + callbackId);
 		}
 	}
 }

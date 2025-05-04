@@ -10,6 +10,7 @@ class SystemTest {
         // Get the component ID for "Position" from the C API
         var positionComponentId:Int = Flecs.getComponentId("Position");
         var velocityComponentId:Int = Flecs.getComponentId("Velocity");
+        var myComponentId:Int = Flecs.createComponent("MyComponent", sizeof(MyComponent));
 
 
         // Register the system for entities with Position

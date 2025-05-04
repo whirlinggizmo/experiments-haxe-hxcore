@@ -2,10 +2,11 @@
 
 -lib hxcore
 -cp src
--cpp out
+-cpp out/scriptable
 
 
 # enable scripting since we are a cppia host
+# Note:  some issues with hxcpp changing types when scriptable is enabled
 -D scriptable 
 
 -D HXCPP_M64
@@ -26,9 +27,9 @@
 
 
 # copy the executable to the dist directory
---cmd mkdir -p dist
---cmd pkill -9 FlecsTest || true
---cmd cp out/FlecsTest dist/FlecsTest
+#--cmd mkdir -p dist
+#--cmd pkill -9 FlecsTest || true
+#--cmd cp out/FlecsTest dist/FlecsTest
 
 
 --cmd echo ""

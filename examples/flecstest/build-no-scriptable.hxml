@@ -2,11 +2,13 @@
 
 -lib hxcore
 -cp src
--cpp out
+-cpp out/noscriptable
 
 
-# enable scripting since we are a cppia host
--D scriptable 
+# enable cppia
+#urgh.. some issues with hxcpp changing types when scriptable is enabled
+# WIP: ObservableCallback (works with RawPointer, but that doesn't work with scriptable?)
+#-D scriptable 
 
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV
@@ -26,11 +28,9 @@
 
 
 # copy the executable to the dist directory
---cmd mkdir -p dist
---cmd pkill -9 FlecsTest || true
---cmd cp out/FlecsTest dist/FlecsTest
-
-
+#--cmd mkdir -p dist
+#--cmd pkill -9 FlecsTest || true
+#--cmd cp out/FlecsTest dist/FlecsTest
 --cmd echo ""
 --cmd echo "Build complete."
 

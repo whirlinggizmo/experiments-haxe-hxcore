@@ -14,13 +14,29 @@ build.hxml
 --cwd ../
 --next
 
-# build the c app 
-#--cwd capp
-#build.hxml
-#--next
+# build the systemtest app
+--cwd systemtest
+build.hxml
+--next
 # TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
-#--cwd ../
-#--next
+--cwd ../
+--next
+
+# build the c app 
+--cwd capp
+build.hxml
+--next
+# TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
+--cwd ../
+--next
+
+# build the flecstest app
+--cwd flecstest
+build.hxml
+--next
+# TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
+--cwd ../
+--next
 
 # Launch the binary
 # Any command line relative paths are relative to the app directory (alternatively, provide absolute paths)
