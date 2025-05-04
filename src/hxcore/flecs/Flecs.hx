@@ -3,6 +3,11 @@ package hxcore.flecs;
 import cpp.Float32;
 import cpp.UInt32;
 import cpp.UInt64;
+import cpp.ConstCharStar;
+import cpp.Pointer;
+import cpp.RawPointer;
+import cpp.ConstPointer;
+import hxcore.logging.Log;
 
 // Type alias for pointer-sized unsigned integer
 #if cpp_64
@@ -14,8 +19,10 @@ typedef UIntPtr = cpp.UInt32;
 // Type alias for pointers to UInt64
 typedef UInt64Ptr = cpp.Pointer<UInt64>;
 
-typedef SystemCallback = cpp.Callable<UInt64Ptr->UInt32->cpp.Pointer<cpp.Pointer<cpp.Void>>->UInt32->Float32->UInt32->Void>;
-
+//typedef SystemCallback = cpp.Callable<UInt64Ptr->UInt32->cpp.Pointer<cpp.Pointer<cpp.Void>>->UInt32->Float32->UInt32->Void>;
+typedef SystemCallback = cpp.Callable<(entities:cpp.ConstPointer<UInt64>, numEntities:UInt32, components:cpp.Pointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32, deltaTime:Float32, callbackId:UInt32) -> Void>;
+//typedef ObserverCallback = cpp.Callable<UInt32->UInt32->UInt32->cpp.RawPointer<cpp.Void>->UInt32->UInt32->Void>;
+typedef ObserverCallback = cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32, callbackId:UInt32) -> Void>;
 @:buildXml('
 <echo value="Compiling Flecs (wrapper)..." />
 <echo value="hxlib path: ${haxelib:hxcore}" />
@@ -28,11 +35,9 @@ typedef SystemCallback = cpp.Callable<UInt64Ptr->UInt32->cpp.Pointer<cpp.Pointer
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_world.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_entity.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_event.c" />
+  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_system.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/systems/destination_system.c" />
   <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/systems/move_system.c" />
-  <!--
-  <file name="${haxelib:hxcore}/src/hxcore/flecs/flecs_wrapper/src/flecs_wrapper_system.c" />
-  -->
 </files>
 ')
 @:headerInclude('flecs_wrapper.h')
@@ -50,7 +55,10 @@ class Flecs {
 	extern public static function printComponentRegistry():Void;
 
 	@:native("flecs_component_create")
-	extern public static function createComponent(name:String, size:UInt32):UInt32;
+	extern public static function flecs_component_create(name:String, size:UInt32):UInt32;
+	public static function createComponent(name:String, size:UInt32):UInt32 {
+		return flecs_component_create(name, size);
+	}
 
 	// Entity inspection
 
@@ -122,10 +130,6 @@ class Flecs {
 	@:native("flecs_entity_get_id")
 	extern public static function getEntityId(ecsId:UInt64):UInt32;
 
-	@:native("flecs_register_system")
-	extern public static function flecs_register_system(name:String, component_ids:cpp.Pointer<UInt32>, num_components:UInt32, callback:SystemCallback,
-		callback_id:UInt32):Bool;
-
 	// Lifecycle
 
 	@:native("flecs_init")
@@ -183,15 +187,63 @@ class Flecs {
 		return result != (cast 0 : cpp.UInt64); // Return true if result is non-zero (success)
 	}
 
-	// ... rest of the code remains the same ...
+	// system
+
+	//@:native("flecs_register_system")
+	//extern public static function flecs_register_system(name:String, component_ids:cpp.Pointer<UInt32>, num_components:UInt32, callback:SystemCallback,
+	//		callback_id:UInt32):Bool;
+
+	@:native("flecs_register_system")
+	//bool flecs_register_system(const char* name, uint32_t *component_ids, uint32_t num_components, SystemCallback callback, uint32_t callback_id);
+	extern static function flecs_register_system(name:String, componentIds:cpp.Pointer<UInt32>, numComponents:UInt32,
+		callback:SystemCallback, callbackId:UInt32):Bool;
+		//callback:cpp.Callable<(entities:Array<UInt64>, components:Array<cpp.RawPointer<cpp.Void>>, numEntities:UInt32, deltaTime:Float32, callbackId:UInt32) -> Void>, callbackId:UInt32):Bool;
+
+	public static function registerSystem(name:String, componentIds:Array<UInt32>, callback:SystemCallbackHandler):Bool {
+		if (componentIds == null)
+			return false;
+		if (componentIds.length == 0)
+			return false;
+
+		// Use standard Array for C interop
+		var compIdArr = new Array<UInt32>();
+		for (id in componentIds) compIdArr.push(id);
+
+		final callbackId = SystemCallbackRegistry.register(callback);
+		if (callbackId == 0) return false; // Failed to register Haxe callback
+
+		final compArrPtr:cpp.Pointer<UInt32> = cpp.Pointer.ofArray(compIdArr); // <-- Use ofArray
+		final compArrLen:UInt32 = cast compIdArr.length;
+
+		// HACK: Call C function directly using untyped __cpp__ and cast trampoline func pointer
+		var result:Bool = false; // C function returns bool
+		untyped __cpp__(
+			// Cast directly to the C typedef name
+			'result = flecs_register_system({0}, {1}, {2}, (SystemCallback)hxcore::flecs::SystemCallbackRegistry_obj::trampoline, {3})',
+			name,       // {0} - const char* name
+			compArrPtr, // {1} - uint32_t* component_ids
+			compArrLen, // {2} - uint32_t num_components
+			callbackId  // {3} - uint32_t callback_id
+			// The trampoline function pointer is cast directly in the string literal
+		);
+
+		if (!result) {
+			Log.warn('Failed to register system "${name}" with Flecs C API.');
+			// Optionally unregister the callback handler if C registration failed
+			SystemCallbackRegistry.unregister(callbackId); // Might need try/catch if unregister throws
+		}
+
+		return result; // Return the boolean result from the C call
+	}
+
 }
 
 typedef ObserverCallbackHandler = (entityId:UInt32, componentId:UInt32, eventId:UInt32, component:Dynamic) -> Void;
 
 @:keep
 class ObserverCallbackRegistry {
-	static var nextCallbackId:UInt32 = 1; // reserve 0 for invalid id
-	static var cbMap:Map<UInt32, ObserverCallbackHandler> = new Map();
+	static private var nextCallbackId:UInt32 = 1; // reserve 0 for invalid id
+	static private var cbMap:Map<UInt32, ObserverCallbackHandler> = new Map();
 
 	public static function register(cb:ObserverCallbackHandler, ?id:UInt32):UInt32 {
 		if (cb == null) {
@@ -218,6 +270,16 @@ class ObserverCallbackRegistry {
 		return id;
 	}
 
+	public static function unregister(id:UInt32):Bool {
+		// TODO:  add an unregister function to the core Flecs library
+		// for now, throw an 'unimplemented' error
+		throw 'ObserverCallbackRegistry.unregister is unimplemented';
+	}
+
+	public static function get(id:UInt32):ObserverCallbackHandler {
+		return cbMap.get(id);
+	}
+
 	// HACK: Takes componentPtr as pointer-sized unsigned integer (UIntPtr) for Cppia compatibility
 	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:UIntPtr, componentSize:UInt32, callbackId:UInt32):Void {
 		// Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
@@ -233,6 +295,82 @@ class ObserverCallbackRegistry {
 		}
 	}
 }
+
+// Wrapper abstract for void* to help with Array<T> template issues with scriptable
+@:transitive abstract VoidPtr(cpp.RawPointer<cpp.Void>) from cpp.RawPointer<cpp.Void> to cpp.RawPointer<cpp.Void> {
+    public inline function new(ptr:cpp.RawPointer<cpp.Void>) {
+        this = ptr;
+    }
+    @:to public inline function toRawPointer():cpp.RawPointer<cpp.Void> {
+        return this;
+    }
+}
+
+// Haxe callback signature type
+typedef SystemCallbackHandler = (entities:Array<UInt64>, componentsPtr:cpp.Pointer<cpp.RawPointer<cpp.Void>>, numEntities:Int, deltaTime:Float) -> Void;
+
+// C function signature type (matching flecs_wrapper.h)
+typedef FlecsSystemCallback = cpp.ConstPointer<UInt64> -> UInt32 -> cpp.Pointer<cpp.RawPointer<cpp.Void>> -> UInt32 -> Float -> UInt32 -> Void;
+
+@:keep
+class SystemCallbackRegistry {
+	static private var nextCallbackId:UInt32 = 1; // reserve 0 for invalid id
+	static private var cbMap:Map<UInt32, SystemCallbackHandler> = new Map();
+
+	public static function register(cb:SystemCallbackHandler, ?id:UInt32):UInt32 {
+		if (cb == null) {
+			Log.warn("No callback function provided to CallbackRegistry.register");
+			return 0;
+		}
+
+		// generate an id if one isn't provided
+		if (id == null) {
+			id = nextCallbackId++;
+			// nextCallbackId++;
+		}
+
+		Log.debug('registering callback ${cb} for id: ${id}');
+		if (cbMap.get(id) != null) {
+			Log.warn("callback already registered for id: " + id);
+			return 0;
+		}
+		cbMap.set(id, cb);
+
+		Log.debug("registered callback for id: " + id);
+
+		// return the id
+		return id;
+	}
+
+	public static function unregister(id:UInt32):Bool {
+		// TODO:  add an unregister function to the core Flecs library
+		// for now, throw an 'unimplemented' error
+		throw 'ObserverCallbackRegistry.unregister is unimplemented';
+	}
+
+	public static function get(id:UInt32):SystemCallbackHandler {
+		return cbMap.get(id);
+	}
+
+	// HACK: Takes componentPtr as pointer-sized unsigned integer (UIntPtr) for Cppia compatibility
+	public static function trampoline(entities:cpp.ConstPointer<UInt64>, numEntities:UInt32, componentsPtr:cpp.Pointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32, deltaTime:Float32, callbackId:UInt32):Void {
+		// Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
+		var cb:SystemCallbackHandler = cbMap.get(callbackId);
+		if (cb != null) {
+			Log.debug("calling callback for id: " + callbackId);
+			var entitiesArr = new Array<UInt64>();
+			for (i in 0...numEntities) {
+				// Use untyped __cpp__ for direct C++ pointer access
+				entitiesArr.push(untyped __cpp__("{0}[{1}]", entities, i));
+			}
+
+			// Pass the pointer and counts directly to the actual handler
+			cb(entitiesArr, componentsPtr, numEntities, deltaTime);
+		} else {
+			Log.error("Callback not found for id: " + callbackId);
+		}
+	}
+} // End SystemCallbackRegistry
 
 // known components
 

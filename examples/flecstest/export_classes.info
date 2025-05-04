@@ -1,19 +1,31 @@
+class sys.thread._Thread.Thread_Impl_
+class sys.thread.Lock
+class sys.thread._EventLoop.RegularEvent
 class hxcore.logging.Log
 class hxcore.logging._Log.LogLevel_Impl_
+class Destination
 class Velocity
 class Position
+class hxcore.flecs.SystemCallbackRegistry
 class hxcore.flecs.ObserverCallbackRegistry
 class hxcore.flecs.Flecs
 class haxe.iterators.ArrayIterator
 class haxe.io.Path
 class haxe.ds.IntMap
+class haxe.MainLoop
+class haxe.MainEvent
 class haxe.Log
+class haxe.EntryPoint
+class sys.thread._Thread.HaxeThread
+class sys.thread.EventLoop
+class sys.thread.Mutex
 interface haxe.IMap
 class Sys
 class StringTools
 class StringBuf
 class Std
 class FlecsTest
+class TestComponent
 class Date
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/StringTools.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/StringTools.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Date.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Date.hx
@@ -22,8 +34,14 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/StringBuf.hx /home/rkn
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Sys.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/Sys.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/Log.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/Log.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/ds/IntMap.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/haxe/ds/IntMap.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/sys/thread/Lock.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/sys/thread/Lock.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/sys/thread/Mutex.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/sys/thread/Mutex.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/sys/thread/Thread.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/cpp/_std/sys/thread/Thread.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/EntryPoint.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/EntryPoint.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/MainLoop.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/MainLoop.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Path.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/io/Path.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayIterator.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/haxe/iterators/ArrayIterator.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/EventLoop.hx /home/rknopf/toolchains/haxe/haxe-4.3.6/std/sys/thread/EventLoop.hx
 file FlecsTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/flecstest/src/FlecsTest.hx
 file hxcore/flecs/Flecs.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/flecs/Flecs.hx
 file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
