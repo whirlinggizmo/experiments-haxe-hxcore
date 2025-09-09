@@ -6,7 +6,7 @@
 
 
 # enable scripting since we are a cppia host
--D scriptable 
+#-D scriptable 
 
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV

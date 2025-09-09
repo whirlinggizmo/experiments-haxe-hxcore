@@ -6,7 +6,6 @@ class hxcore.logging._Log.LogLevel_Impl_
 class Destination
 class Velocity
 class Position
-class hxcore.flecs.SystemCallbackRegistry
 class hxcore.flecs.ObserverCallbackRegistry
 class hxcore.flecs.Flecs
 class haxe.iterators.ArrayIterator

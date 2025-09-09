@@ -15,14 +15,17 @@ typedef UIntPtr = cpp.UInt64;
 #else
 typedef UIntPtr = cpp.UInt32;
 #end
-
 // Type alias for pointers to UInt64
 typedef UInt64Ptr = cpp.Pointer<UInt64>;
 
-//typedef SystemCallback = cpp.Callable<UInt64Ptr->UInt32->cpp.Pointer<cpp.Pointer<cpp.Void>>->UInt32->Float32->UInt32->Void>;
-typedef SystemCallback = cpp.Callable<(entities:cpp.ConstPointer<UInt64>, numEntities:UInt32, components:cpp.Pointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32, deltaTime:Float32, callbackId:UInt32) -> Void>;
-//typedef ObserverCallback = cpp.Callable<UInt32->UInt32->UInt32->cpp.RawPointer<cpp.Void>->UInt32->UInt32->Void>;
-typedef ObserverCallback = cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32, callbackId:UInt32) -> Void>;
+// typedef SystemCallback = cpp.Callable<UInt64Ptr->UInt32->cpp.Pointer<cpp.Pointer<cpp.Void>>->UInt32->Float32->UInt32->Void>;
+//typedef SystemCallback = cpp.Callable<(entities:cpp.ConstPointer<UInt64>, numEntities:UInt32, components:cpp.Pointer<cpp.RawPointer<cpp.Void>>,
+//		numComponents:UInt32, deltaTime:Float32, callbackId:UInt32) -> Void>;
+
+// typedef ObserverCallback = cpp.Callable<UInt32->UInt32->UInt32->cpp.RawPointer<cpp.Void>->UInt32->UInt32->Void>;
+typedef ObserverCallback = cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32,
+		callbackId:UInt32) -> Void>;
+
 @:buildXml('
 <echo value="Compiling Flecs (wrapper)..." />
 <echo value="hxlib path: ${haxelib:hxcore}" />
@@ -44,7 +47,19 @@ typedef ObserverCallback = cpp.Callable<(entityId:UInt32, componentId:UInt32, ev
 @:keep
 @:expose
 class Flecs {
+
+	// event types
+	public static final EcsUnknownEvent:UInt32 = 0;
+	public static final EcsOnAdd:UInt32 = 1;
+	public static final EcsOnRemove:UInt32 = 2;
+	public static final EcsOnSet:UInt32 = 3;
+	public static final EcsOnDelete:UInt32 = 4;
+	public static final EcsOnDeleteTarget:UInt32 = 5;
+	public static final EcsOnTableCreate:UInt32 = 6;
+	public static final EcsOnTableDelete:UInt32 = 7;
+
 	// Component management
+
 	@:native("flecs_component_get_id_by_name")
 	extern public static function getComponentId(name:String):UInt32;
 
@@ -56,6 +71,7 @@ class Flecs {
 
 	@:native("flecs_component_create")
 	extern public static function flecs_component_create(name:String, size:UInt32):UInt32;
+
 	public static function createComponent(name:String, size:UInt32):UInt32 {
 		return flecs_component_create(name, size);
 	}
@@ -144,13 +160,18 @@ class Flecs {
 	// Version
 
 	@:native("flecs_version")
-	extern public static function version():String;
+	extern public static function flecs_version():ConstCharStar;
+	public static function version():String {
+		return cast flecs_version();
+	}
 
 	// observer
 
 	@:native("flecs_register_observer")
+	// extern static function flecs_register_observer(componentIds:cpp.Pointer<UInt32>, numComponents:UInt32, eventIds:cpp.Pointer<UInt32>, numEvents:UInt32,
+	//	callback:cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32, callbackId:UInt32) -> Void>, callbackId:UInt32):Bool;
 	extern static function flecs_register_observer(componentIds:cpp.Pointer<UInt32>, numComponents:UInt32, eventIds:cpp.Pointer<UInt32>, numEvents:UInt32,
-		callback:cpp.Callable<(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32, callbackId:UInt32) -> Void>, callbackId:UInt32):Bool;
+		callback:ObserverCallback, callbackId:UInt32):Bool;
 
 	public static function registerObserver(componentIds:Array<UInt32>, eventIds:Array<UInt32>, callback:ObserverCallbackHandler):Bool {
 		if (componentIds == null)
@@ -180,24 +201,24 @@ class Flecs {
 
 		// HACK: Call C function directly using untyped __cpp__ and cast trampoline func pointer
 		var result:cpp.UInt64 = 0; // Assuming C function returns UInt64 (ecs_entity_t)
-		untyped __cpp__(
-			"{5} = flecs_register_observer({0}, {1}, {2}, {3}, (void (*)(unsigned int, unsigned int, unsigned int, void*, unsigned int, unsigned int))hxcore::flecs::ObserverCallbackRegistry_obj::trampoline, {4})",
-			compArrPtr, compArrLen, eventArrPtr, eventArrLen, callbackId, result
-		);
-		return result != (cast 0 : cpp.UInt64); // Return true if result is non-zero (success)
+		//untyped __cpp__("{5} = flecs_register_observer({0}, {1}, {2}, {3}, (void (*)(unsigned int, unsigned int, unsigned int, void*, unsigned int, unsigned int))hxcore::flecs::ObserverCallbackRegistry_obj::trampoline, {4})",
+		//	compArrPtr, compArrLen, eventArrPtr, eventArrLen, callbackId, result);
+		//return result != (cast 0 : cpp.UInt64); // Return true if result is non-zero (success)
+		return flecs_register_observer(compArrPtr, compArrLen, eventArrPtr, eventArrLen, cpp.Callable.fromStaticFunction(ObserverCallbackRegistry.trampoline), callbackId);
 	}
 
+/*
 	// system
-
-	//@:native("flecs_register_system")
-	//extern public static function flecs_register_system(name:String, component_ids:cpp.Pointer<UInt32>, num_components:UInt32, callback:SystemCallback,
+	// @:native("flecs_register_system")
+	// extern public static function flecs_register_system(name:String, component_ids:cpp.Pointer<UInt32>, num_components:UInt32, callback:SystemCallback,
 	//		callback_id:UInt32):Bool;
 
 	@:native("flecs_register_system")
-	//bool flecs_register_system(const char* name, uint32_t *component_ids, uint32_t num_components, SystemCallback callback, uint32_t callback_id);
-	extern static function flecs_register_system(name:String, componentIds:cpp.Pointer<UInt32>, numComponents:UInt32,
-		callback:SystemCallback, callbackId:UInt32):Bool;
-		//callback:cpp.Callable<(entities:Array<UInt64>, components:Array<cpp.RawPointer<cpp.Void>>, numEntities:UInt32, deltaTime:Float32, callbackId:UInt32) -> Void>, callbackId:UInt32):Bool;
+	// bool flecs_register_system(const char* name, uint32_t *component_ids, uint32_t num_components, SystemCallback callback, uint32_t callback_id);
+	extern static function flecs_register_system(name:String, componentIds:cpp.Pointer<UInt32>, numComponents:UInt32, callback:SystemCallback,
+		callbackId:UInt32):Bool;
+
+	// callback:cpp.Callable<(entities:Array<UInt64>, components:Array<cpp.RawPointer<cpp.Void>>, numEntities:UInt32, deltaTime:Float32, callbackId:UInt32) -> Void>, callbackId:UInt32):Bool;
 
 	public static function registerSystem(name:String, componentIds:Array<UInt32>, callback:SystemCallbackHandler):Bool {
 		if (componentIds == null)
@@ -207,23 +228,24 @@ class Flecs {
 
 		// Use standard Array for C interop
 		var compIdArr = new Array<UInt32>();
-		for (id in componentIds) compIdArr.push(id);
+		for (id in componentIds)
+			compIdArr.push(id);
 
 		final callbackId = SystemCallbackRegistry.register(callback);
-		if (callbackId == 0) return false; // Failed to register Haxe callback
+		if (callbackId == 0)
+			return false; // Failed to register Haxe callback
 
 		final compArrPtr:cpp.Pointer<UInt32> = cpp.Pointer.ofArray(compIdArr); // <-- Use ofArray
 		final compArrLen:UInt32 = cast compIdArr.length;
 
 		// HACK: Call C function directly using untyped __cpp__ and cast trampoline func pointer
 		var result:Bool = false; // C function returns bool
-		untyped __cpp__(
-			// Cast directly to the C typedef name
+		untyped __cpp__( // Cast directly to the C typedef name
 			'result = flecs_register_system({0}, {1}, {2}, (SystemCallback)hxcore::flecs::SystemCallbackRegistry_obj::trampoline, {3})',
-			name,       // {0} - const char* name
+			name, // {0} - const char* name
 			compArrPtr, // {1} - uint32_t* component_ids
 			compArrLen, // {2} - uint32_t num_components
-			callbackId  // {3} - uint32_t callback_id
+			callbackId // {3} - uint32_t callback_id
 			// The trampoline function pointer is cast directly in the string literal
 		);
 
@@ -235,10 +257,10 @@ class Flecs {
 
 		return result; // Return the boolean result from the C call
 	}
-
+	*/
 }
 
-typedef ObserverCallbackHandler = (entityId:UInt32, componentId:UInt32, eventId:UInt32, component:Dynamic) -> Void;
+typedef ObserverCallbackHandler = (entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtrInt:UIntPtr) -> Void;
 
 @:keep
 class ObserverCallbackRegistry {
@@ -281,15 +303,20 @@ class ObserverCallbackRegistry {
 	}
 
 	// HACK: Takes componentPtr as pointer-sized unsigned integer (UIntPtr) for Cppia compatibility
-	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:UIntPtr, componentSize:UInt32, callbackId:UInt32):Void {
-		// Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
+	
+	//(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>, componentSize:UInt32,
+	//	callbackId:UInt32)
+	public static function trampoline(entityId:UInt32, componentId:UInt32, eventId:UInt32, componentPtr:cpp.RawPointer<cpp.Void>,
+			componentSize:UInt32, callbackId:UInt32):Void {
+		Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
 		var cb:ObserverCallbackHandler = cbMap.get(callbackId);
 		if (cb != null) {
 			Log.debug("calling callback for id: " + callbackId);
-			// Convert UIntPtr (UInt32 or UInt64) back to void* using untyped __cpp__
-			var actualComponentPtr:cpp.RawPointer<cpp.Void> = untyped __cpp__("(void*){0}", componentPtr);
+			// Convert the void* to UIntPtr (represented as uintptr_t in C++) before passing to the Haxe handler
+			var componentPtrInt:UIntPtr = untyped __cpp__('(uintptr_t){0}', componentPtr);
+			//var actualComponentPtr:cpp.RawPointer<cpp.Void> = untyped __cpp__("(void*){0}", componentPtr);
 			// Pass pointer (cast to Dynamic) to the actual handler
-			cb(entityId, componentId, eventId, cast actualComponentPtr);
+			cb(entityId, componentId, eventId, componentPtrInt);
 		} else {
 			Log.warn("no callback found for id: " + callbackId);
 		}
@@ -297,20 +324,22 @@ class ObserverCallbackRegistry {
 }
 
 // Wrapper abstract for void* to help with Array<T> template issues with scriptable
-@:transitive abstract VoidPtr(cpp.RawPointer<cpp.Void>) from cpp.RawPointer<cpp.Void> to cpp.RawPointer<cpp.Void> {
-    public inline function new(ptr:cpp.RawPointer<cpp.Void>) {
-        this = ptr;
-    }
-    @:to public inline function toRawPointer():cpp.RawPointer<cpp.Void> {
-        return this;
-    }
-}
-
+/*
+	@:transitive abstract VoidPtr(cpp.RawPointer<cpp.Void>) from cpp.RawPointer<cpp.Void> to cpp.RawPointer<cpp.Void> {
+	public inline function new(ptr:cpp.RawPointer<cpp.Void>) {
+		this = ptr;
+	}
+	@:to public inline function toRawPointer():cpp.RawPointer<cpp.Void> {
+		return this;
+	}
+	}
+ */
+ /*
 // Haxe callback signature type
 typedef SystemCallbackHandler = (entities:Array<UInt64>, componentsPtr:cpp.Pointer<cpp.RawPointer<cpp.Void>>, numEntities:Int, deltaTime:Float) -> Void;
 
 // C function signature type (matching flecs_wrapper.h)
-typedef FlecsSystemCallback = cpp.ConstPointer<UInt64> -> UInt32 -> cpp.Pointer<cpp.RawPointer<cpp.Void>> -> UInt32 -> Float -> UInt32 -> Void;
+typedef FlecsSystemCallback = cpp.ConstPointer<UInt64>->UInt32->cpp.Pointer<cpp.RawPointer<cpp.Void>>->UInt32->Float->UInt32->Void;
 
 @:keep
 class SystemCallbackRegistry {
@@ -353,7 +382,8 @@ class SystemCallbackRegistry {
 	}
 
 	// HACK: Takes componentPtr as pointer-sized unsigned integer (UIntPtr) for Cppia compatibility
-	public static function trampoline(entities:cpp.ConstPointer<UInt64>, numEntities:UInt32, componentsPtr:cpp.Pointer<cpp.RawPointer<cpp.Void>>, numComponents:UInt32, deltaTime:Float32, callbackId:UInt32):Void {
+	public static function trampoline(entities:cpp.ConstPointer<UInt64>, numEntities:UInt32, componentsPtr:cpp.Pointer<cpp.RawPointer<cpp.Void>>,
+			numComponents:UInt32, deltaTime:Float32, callbackId:UInt32):Void {
 		// Log.debug("in trampoline: " + entityId + " " + componentId + " " + eventId + " " + callbackId);
 		var cb:SystemCallbackHandler = cbMap.get(callbackId);
 		if (cb != null) {
@@ -371,9 +401,15 @@ class SystemCallbackRegistry {
 		}
 	}
 } // End SystemCallbackRegistry
+*/
 
 // known components
 
+/*
+	typedef Position = {x:Float32, y:Float32};
+	typedef Velocity = {x:Float32, y:Float32};
+	typedef Destination = {x:Float32, y:Float32, speed:Float32};
+ */
 @:structAccess
 @:structInit
 @:nativeGen
