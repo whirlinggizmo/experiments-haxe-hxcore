@@ -1,5 +1,6 @@
 package hxcore.scripting;
 
+import haxe.Log;
 import sys.FileSystem;
 import haxe.io.Path;
 import hxcore.logging.Log;
@@ -56,18 +57,59 @@ class ScriptCompiler {
 				return output;
 			} else {
 				Log.warn('Unable to find $cmd using $lookupCmd');
-				return null;
+				//return null;
 			}
 		} catch (e) {
+			Log.warn('Error while trying to find $cmd using $lookupCmd: ' + e.message);
 			return null;
 		}
+
+		try {
+			// try to find haxe in common install locations
+			var possiblePaths = [
+				// Windows
+				"C:/HaxeToolkit/haxe",
+				"C:/Program Files/HaxeToolkit/haxe",
+				"C:/Program Files (x86)/HaxeToolkit/haxe",
+				// macOS
+				"/usr/local/bin/haxe",
+				"/opt/homebrew/bin/haxe", // M1 macs with homebrew
+				"/usr/bin/haxe",
+				// Linux
+				"/usr/bin/haxe",
+				"/usr/local/bin/haxe",
+
+				// my machine
+				"/home/rknopf/toolchains/haxe/haxe-4.3.7/haxe"
+			];
+
+			for (possiblePath in possiblePaths) {
+				Log.info("Checking common path for haxe: " + possiblePath);
+				if (isValidHaxePath(possiblePath)) {
+					return possiblePath;
+				}
+			}
+		} catch (e) {
+			Log.warn('Error while checking common haxe paths: ' + e.message);
+			return null;
+		}
+
+		// last resort, just try 'haxe' and hope it's in the PATH
+		Log.info("Falling back to default command: " + cmd);
+		if (isValidHaxePath(cmd)) {
+			return cmd;		
+		}
+
+		// unable to find haxe
+		Log.error("Unable to find haxe executable. Please ensure haxe is installed and available in your system PATH, or set the HAXEPATH environment variable to the haxe installation directory.");
+		return null;
 	}
 
 	private static function ensureAbsolute(base:String, path:String):String {
 		return Path.isAbsolute(path) ? Path.normalize(path) : Path.normalize(Path.join([base, path]));
 	}
 
-	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, target:String, haxeArgs:Array<String>,
+	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String, haxeArgs:Array<String>,
 			className:String):Int {
 		if (sourceDir == null) {
 			Log.error("Please specify a source directory.");
@@ -82,6 +124,7 @@ class ScriptCompiler {
 		rootDir = ensureAbsolute(Sys.getCwd(), rootDir);
 		sourceDir = ensureAbsolute(rootDir, sourceDir);
 		outputDir = ensureAbsolute(rootDir, outputDir);
+		classesInfoPath = ensureAbsolute(rootDir, classesInfoPath);
 
 		rootDir = Path.addTrailingSlash(rootDir);
 		sourceDir = Path.addTrailingSlash(sourceDir);
@@ -98,26 +141,35 @@ class ScriptCompiler {
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
 		var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
 
+		var outputFileDir = Path.join([outputDir, packagePath]);
+		var outputFilePath = Path.join([outputFileDir, outputFileName]);
+
 		Log.debug('Compiling class: $className');
+		Log.debug('Root dir: $rootDir');
 		Log.debug('Source file: $hxFilePath');
 		Log.debug('Output file: $outputFilePath');
+		Log.debug('ClassesInfo file: $classesInfoPath');
 
 		if (FileSystem.exists(outputFilePath))
 			FileSystem.deleteFile(outputFilePath);
+
+		if (!FileSystem.exists(outputFileDir))
+			Log.debug('Creating output directory: $outputFileDir');
+			FileSystem.createDirectory(outputFileDir);
+		
 		if (!FileSystem.exists(hxFilePath)) {
 			Log.error('Class file not found: $hxFilePath');
 			return -1;
 		}
-		if (!FileSystem.exists(outputFileDir))
-			FileSystem.createDirectory(outputFileDir);
 
-		var classInfoFile = Path.join([sourceDir, "export_classes.info"]);
-		if (!FileSystem.exists(classInfoFile)) {
-			Log.error('Class info file not found: $classInfoFile');
+
+		//var classInfoFile = Path.join([sourceDir, "export_classes.info"]);
+		if (!FileSystem.exists(classesInfoPath)) {
+			Log.error('Class info file not found: $classesInfoPath');
 			return -1;
 		}
 
-		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classInfoFile'];
+		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classesInfoPath'];
 		#if emscripten
 		args.push("-D");
 		args.push("CPPIA_NO_JIT");
@@ -133,6 +185,8 @@ class ScriptCompiler {
 
 		Log.debug('Command: $cmd');
 		Log.debug('Args: $args');
+
+		Log.debug('Full command: $cmd ' + args.join(" "));
 
 		try {
 			final process = new Process(cmd, args);
@@ -267,7 +321,7 @@ class ScriptCompiler {
 		return classNames;
 	}
 
-	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, target:String, haxeArgs:Array<String>,
+	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, target:String, haxeArgs:Array<String>,
 			className:String):Int {
 		// strip any preceding '.' from the extension
 		if (StringTools.startsWith(target, ".")) {
@@ -277,7 +331,7 @@ class ScriptCompiler {
 		rootDir = rootDir ?? Sys.getCwd();
 		haxeArgs = haxeArgs ?? [];
 
-		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, target, haxeArgs, className);
+		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, target, haxeArgs, className);
 
 		if (result != 0) {
 			Log.error("Failed to compile class: " + className);
@@ -288,7 +342,7 @@ class ScriptCompiler {
 		return result;
 	}
 
-	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', extension:String = "js"):Void {
+	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = '.', extension:String = "js"):Void {
 		var files = getFilesRecursive(scriptsDir);
 
 		// only include .hx files
@@ -307,7 +361,7 @@ class ScriptCompiler {
 			// replace slashes with dots
 			fileName = fileName.split("/").join(".");
 
-			var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, extension, haxeArgs, fileName);
+			var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
 
 			if (result != 0) {
 				Log.error("Failed to compile class: " + fileName);
@@ -318,7 +372,7 @@ class ScriptCompiler {
 	}
 
 	public static function main() {
-		Log.setLevel(LogLevel.Info);
+		Log.setLevel(LogLevel.Debug);
 		Log.debug("ScriptCompiler starting");
 		Log.rawOutput = true;
 		// This is the path of this file?
@@ -331,6 +385,7 @@ class ScriptCompiler {
 		var classNames = [];
 		var outputDirectory = "";
 		var target = "js";
+		var classesInfoPath = "export_classes.info";
 
 		var args = Sys.args();
 		args = trimArgs(args);
@@ -344,7 +399,7 @@ class ScriptCompiler {
 			currentArg = StringTools.trim(currentArg);
 
 			if ((currentArg == "-h") || (currentArg == "--help")) {
-				Log.info("Usage: haxe --run hxcore.macros.ScriptCompiler [--sourceDir | -src] <sourceDir> [--outputDir | -out] <outputDir> [--target | -t] <target> [--class | -c] <className>");
+				Log.info("Usage: haxe --run hxcore.macros.ScriptCompiler [--rootDir | -root] <rootDir> [--sourceDir | -src] <sourceDir> [--outputDir | -out] <outputDir> [--classesInfo | -ci ] <classesInfoFile> [--target | -t] <target> [--class | -c] <className>");
 				return;
 			} else if ((currentArg == "-src") || currentArg == "--sourcedir") {
 				if (args.length < i + 2) {
@@ -367,7 +422,7 @@ class ScriptCompiler {
 				}
 				outputDirectory = args[i + 1];
 				args.splice(i, 2);
-			} else if ((currentArg == "-root") || (currentArg == "--rootDir")) {
+			} else if ((currentArg == "-root") || (currentArg == "--rootdir")) {
 				if (args.length < i + 2) {
 					Log.error('Error: ${args[i]} requires a directory argument');
 					return;
@@ -381,16 +436,23 @@ class ScriptCompiler {
 				}
 				target = args[i + 1];
 				args.splice(i, 2);
+			} else if ((currentArg == "-ci") || (currentArg == "--classesinfo")) {
+				if (args.length < i + 2) {
+					Log.error('Error: ${args[i]} requires a file path argument');
+					return;
+				}
+				classesInfoPath = args[i + 1];
+				args.splice(i, 2);
 			}
 
 			i--;
 		}
 
-		// trace("Source directory: " + sourceDirectory);
-		// trace("Output directory: " + outputDirectory);
-		// trace("Target: " + target);
+		// Log.debug("Source directory: " + sourceDirectory);
+		// Log.debug("Output directory: " + outputDirectory);
+		// Log.debug("Target: " + target);
 
-		// trace("Class names: " + classNames);
+		// Log.debug("Class names: " + classNames);
 
 		if (classNames.length == 0) {
 			Log.error("Please specify a class/script name (e.g. [--className | -class | -c | --script] MyScript). The class name (including package) is relative to the [--sourceDir | -src] directory (e.g. MyScript or mygame.MyScript).");
@@ -417,8 +479,8 @@ class ScriptCompiler {
 		#end
 
 		for (className in classNames) {
-			Log.debug('Compiling ${Path.join([sourceDirectory, className + ".hx"])} to ${Path.join([outputDirectory, className + "." + target])}...');
-			ScriptCompiler.compileScriptInternal(rootDir, sourceDirectory, outputDirectory, target, args, className);
+			Log.debug('Compiling ${Path.join([rootDir, sourceDirectory, className + ".hx"])} to ${Path.join([rootDir, outputDirectory, className + "." + target])}...');
+			ScriptCompiler.compileScriptInternal(rootDir, sourceDirectory, outputDirectory, classesInfoPath, target, args, className);
 		}
 
 		Log.debug("ScriptCompiler finished");

@@ -29,6 +29,7 @@ class ScriptLoader {
 	private static var scriptCache:Map<String, ScriptInfo> = new Map<String, ScriptInfo>();
 	private static var scriptDirectory:String;
 	private static var scriptSourceDirectory:String;
+	private static var classesInfoPath:String = ".";
 	private static var hotReloadEnabled:Bool = false;
 	private static var hotCompileEnabled:Bool = false;
 	private static var externalScriptsEnabled:Bool = false;
@@ -319,7 +320,7 @@ class ScriptLoader {
 
 		if (resolvedClass == null) {
 			// we didn't find the class in the script directory (or it's disabled), try the internal scripts
-			var internalClassName = internalScriptNamespace + "." + className;
+			var internalClassName = (internalScriptNamespace.length > 0) ? internalScriptNamespace + "." + className : className;
 			try {
 				Log.debug('Trying to resolve class from built-in scripts: $internalClassName');
 				resolvedClass = Type.resolveClass(internalClassName);
@@ -416,7 +417,7 @@ class ScriptLoader {
 				var haxeArgs = ["-dce", "full", "-cp", "lib"];
 
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
-				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, "cppia", haxeArgs, scriptName);
+				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
 
 				if (result != 0) {
 					// If the compilation failed, the script on disk will be the old version.

@@ -1,3 +1,5 @@
+-cp src
+
 --cwd examples
 --next
 
@@ -8,7 +10,7 @@ build.hxml
 
 # build the Test script
 -lib hxcore
---macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', '', 'cppia', [], 'Test')
 --next
 # TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
 --cwd ../
