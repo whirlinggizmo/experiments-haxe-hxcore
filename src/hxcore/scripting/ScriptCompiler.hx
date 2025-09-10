@@ -7,6 +7,7 @@ import hxcore.logging.Log;
 import hxcore.util.PathUtils;
 import sys.io.File;
 import sys.io.Process;
+//import hxcore.scripting.ScriptLoader;
 
 // A script generator that generates "script" files from .hx files
 // hxml can't do variables, so we use this
@@ -14,6 +15,12 @@ import sys.io.Process;
 // haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName scripts.Test --target cppia --outputDir dist/scripts
 @:keep
 class ScriptCompiler {
+
+	private static var generatedScriptNamespace:String = "gen";
+	public static function getGeneratedScriptNamespace():String {
+		return generatedScriptNamespace;
+	}
+
 	public static function findHaxeExecutable():Null<String> {
 		final cmd = 'haxe';
 		var lookupCmd = switch (Sys.systemName()) {
@@ -34,6 +41,28 @@ class ScriptCompiler {
 			}
 		}
 
+		function isSandboxedEnvironment():Bool {
+			// Check for Snap environment
+			if (Sys.getEnv("SNAP") != null || Sys.getEnv("SNAP_NAME") != null) {
+				return true;
+			}
+			// Check for Flatpak environment
+			if (Sys.getEnv("FLATPAK_ID") != null || Sys.getEnv("FLATPAK_SANDBOX") != null) {
+				return true;
+			}
+			// Check for AppImage environment
+			if (Sys.getEnv("APPIMAGE") != null) {
+				return true;
+			}
+			// Check for Docker environment
+			if (Sys.getEnv("container") != null) {
+				return true;
+			}
+			return false;
+		}
+
+		var isSandboxed = isSandboxedEnvironment();
+
 		// check for environment variable HAXEPATH first
 		var path = Sys.getEnv("HAXEPATH");
 		if (path != null) {
@@ -47,6 +76,61 @@ class ScriptCompiler {
 			Log.warn('Attempted bin path: ' + haxePath);
 		}
 
+		// Check for user-specific environment variables (works in both sandboxed and non-sandboxed)
+		var userHaxePath = Sys.getEnv("HAXE_USER_PATH");
+		if (userHaxePath != null) {
+			Log.info("Found HAXE_USER_PATH: " + userHaxePath);
+			if (isValidHaxePath(userHaxePath)) {
+				return userHaxePath;
+			}
+		}
+
+		// Check for sandbox-specific environment variables
+		if (isSandboxed) {
+			Log.info("Detected sandboxed environment, checking sandbox-specific paths...");
+
+			// Check Snap-specific paths
+			var snapPath = Sys.getEnv("SNAP");
+			if (snapPath != null) {
+				var snapHaxePaths = [
+					Path.join([snapPath, "usr", "bin", cmd]),
+					Path.join([snapPath, "bin", cmd]),
+					Path.join([snapPath, "usr", "local", "bin", cmd])
+				];
+				for (snapHaxePath in snapHaxePaths) {
+					Log.info("Checking Snap path: " + snapHaxePath);
+					if (isValidHaxePath(snapHaxePath)) {
+						return snapHaxePath;
+					}
+				}
+			}
+
+			// Check Flatpak-specific paths
+			var flatpakPath = Sys.getEnv("FLATPAK_SANDBOX");
+			if (flatpakPath != null) {
+				var flatpakHaxePaths = [
+					Path.join(["/usr", "bin", cmd]),
+					Path.join(["/app", "bin", cmd]),
+					Path.join(["/usr", "local", "bin", cmd])
+				];
+				for (flatpakHaxePath in flatpakHaxePaths) {
+					Log.info("Checking Flatpak path: " + flatpakHaxePath);
+					if (isValidHaxePath(flatpakHaxePath)) {
+						return flatpakHaxePath;
+					}
+				}
+			}
+
+			// Check for sandbox-specific environment variables
+			var sandboxHaxePath = Sys.getEnv("HAXE_SANDBOX_PATH");
+			if (sandboxHaxePath != null) {
+				Log.info("Found HAXE_SANDBOX_PATH: " + sandboxHaxePath);
+				if (isValidHaxePath(sandboxHaxePath)) {
+					return sandboxHaxePath;
+				}
+			}
+		}
+
 		// try using which/where lookup (depending on the platform)
 		try {
 			var proc = new Process(lookupCmd, [cmd]);
@@ -57,7 +141,7 @@ class ScriptCompiler {
 				return output;
 			} else {
 				Log.warn('Unable to find $cmd using $lookupCmd');
-				//return null;
+				// return null;
 			}
 		} catch (e) {
 			Log.warn('Error while trying to find $cmd using $lookupCmd: ' + e.message);
@@ -79,6 +163,13 @@ class ScriptCompiler {
 				"/usr/bin/haxe",
 				"/usr/local/bin/haxe",
 
+				// Common user-specific locations
+				Path.join([Sys.getEnv("HOME") ?? "", "bin", cmd]),
+				Path.join([Sys.getEnv("HOME") ?? "", ".local", "bin", cmd]),
+				Path.join([Sys.getEnv("HOME") ?? "", "haxe", "haxe"]),
+				Path.join([Sys.getEnv("HOME") ?? "", "toolchains", "haxe", "haxe"]),
+				Path.join([Sys.getEnv("HOME") ?? "", "opt", "haxe", "haxe"]),
+
 				// my machine
 				"/home/rknopf/toolchains/haxe/haxe-4.3.7/haxe"
 			];
@@ -91,17 +182,37 @@ class ScriptCompiler {
 			}
 		} catch (e) {
 			Log.warn('Error while checking common haxe paths: ' + e.message);
+			if (isSandboxed) {
+				Log.warn('You are running in a sandboxed environment. This may prevent access to system-installed Haxe.');
+				Log.warn('Consider the following solutions:');
+				Log.warn('1. Set HAXE_SANDBOX_PATH environment variable to point to your Haxe installation');
+				Log.warn('2. Set HAXE_USER_PATH environment variable to the full path of your Haxe executable');
+				Log.warn('3. Install Haxe within the sandbox if possible');
+				Log.warn('4. Use classic confinement for Snap packages (snap install --classic)');
+				Log.warn('5. Bundle Haxe with your application');
+			} else {
+				Log.warn('Are you in a sandboxed environment (like Snap or Flatpak)?');
+			}
 			return null;
 		}
 
 		// last resort, just try 'haxe' and hope it's in the PATH
 		Log.info("Falling back to default command: " + cmd);
 		if (isValidHaxePath(cmd)) {
-			return cmd;		
+			return cmd;
 		}
 
 		// unable to find haxe
-		Log.error("Unable to find haxe executable. Please ensure haxe is installed and available in your system PATH, or set the HAXEPATH environment variable to the haxe installation directory.");
+		if (isSandboxed) {
+			Log.error("Unable to find haxe executable in sandboxed environment.");
+			Log.error("Solutions for sandboxed environments:");
+			Log.error("1. Set HAXE_SANDBOX_PATH environment variable to the full path of your Haxe executable");
+			Log.error("2. Set HAXE_USER_PATH environment variable to the full path of your Haxe executable");
+			Log.error("3. Set HAXEPATH environment variable to the Haxe installation directory");
+			Log.error("4. Use classic confinement for Snap (linux) packages: snap install --classic your-package");
+		} else {
+			Log.error("Unable to find haxe executable. Please ensure haxe is installed and available in your system PATH, or set the HAXEPATH environment variable to the haxe installation directory.");
+		}
 		return null;
 	}
 
@@ -109,14 +220,89 @@ class ScriptCompiler {
 		return Path.isAbsolute(path) ? Path.normalize(path) : Path.normalize(Path.join([base, path]));
 	}
 
-	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String, haxeArgs:Array<String>,
-			className:String):Int {
+	private static function addParentPackageToModule(modulePath:String, parentPackageName:String):Bool {
+		if (!FileSystem.exists(modulePath)) {
+			Log.error('Module file not found: $modulePath');
+			return false;
+		}
+		// read the module file into memory
+		var file = File.read(modulePath, false);
+		var fileBytes = file.readAll();
+		file.close();
+
+		if (fileBytes.length == 0) {
+			Log.error('Module file is empty: $modulePath');
+			return false;
+		}
+
+		// convert the file bytes to a string
+		var fileContent = fileBytes.toString();
+		if (fileContent == null) {
+			Log.error('Failed to convert module file to string: $modulePath');
+			return false;
+		}
+
+		// add the parent package name to the module file.  if it doesn't have a package declaration, add it
+		// find the line with the package declaration
+		// we'll have to use a regex to find the line with the package declaration
+		// we're looking for "package" as the start of the line (ignoring preceeding whitespace)
+		// we need to replace the line with the package declaration:
+		// package; -> package gen;
+		// package ; -> package gen;
+		// package mine; -> package gen.mine;
+		// package mine   ; -> package gen.mine;
+		// or no package declaration at all -> package gen;
+
+		// Regex to match package declaration at start of line (ignoring whitespace)
+		var packageRegex = new EReg("^\\s*package\\s*([^;\\s]*)\\s*;", "m");
+
+		if (packageRegex.match(fileContent)) {
+			// Found existing package declaration
+			var existingPackage = packageRegex.matched(1);
+			var newPackageDeclaration:String;
+
+			if (existingPackage == null || existingPackage.length == 0) {
+				// package; -> package gen;
+				newPackageDeclaration = 'package $parentPackageName;';
+			} else {
+				// package mine; -> package gen.mine;
+				newPackageDeclaration = 'package $parentPackageName.$existingPackage;';
+			}
+
+			// Replace the existing package declaration
+			fileContent = packageRegex.replace(fileContent, newPackageDeclaration);
+			Log.debug('Updated package declaration: $newPackageDeclaration');
+		} else {
+			// No package declaration found, add one at the beginning
+			var newPackageDeclaration = 'package $parentPackageName;\n';
+			fileContent = newPackageDeclaration + fileContent;
+			Log.debug('Added new package declaration: $newPackageDeclaration');
+		}
+
+		// write the module file back to disk
+		var file = File.write(modulePath, false);
+		if (file == null) {
+			Log.error('Failed to write module file: $modulePath');
+			return false;
+		}
+		file.writeString(fileContent);
+		file.close();
+		return true;
+	}
+
+	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
+			haxeArgs:Array<String>, className:String):Int {
 		if (sourceDir == null) {
-			Log.error("Please specify a source directory.");
+			Log.error("Please specify a source directory (e.g. 'scripts').");
 			return -1;
 		}
 		if (outputDir == null) {
-			Log.error("Please specify an output directory.");
+			Log.error("Please specify an output directory (e.g. 'gen/scripts').");
+			return -1;
+		}
+
+		if (className == null) {
+			Log.error("Please specify a class name (e.g. 'Test' for scripts/Test.hx).");
 			return -1;
 		}
 
@@ -139,7 +325,8 @@ class ScriptCompiler {
 		var outputFileName = '${classPath.file}.$target';
 		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
-		var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
+		//var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
+		var hxFilePath = Path.join([rootDir, classNameAsPath + ".hx"]);
 
 		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
@@ -155,33 +342,125 @@ class ScriptCompiler {
 
 		if (!FileSystem.exists(outputFileDir))
 			Log.debug('Creating output directory: $outputFileDir');
-			FileSystem.createDirectory(outputFileDir);
-		
+		FileSystem.createDirectory(outputFileDir);
+
 		if (!FileSystem.exists(hxFilePath)) {
 			Log.error('Class file not found: $hxFilePath');
 			return -1;
 		}
 
-
-		//var classInfoFile = Path.join([sourceDir, "export_classes.info"]);
 		if (!FileSystem.exists(classesInfoPath)) {
 			Log.error('Class info file not found: $classesInfoPath');
 			return -1;
 		}
-
-		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classesInfoPath'];
-		#if emscripten
-		args.push("-D");
-		args.push("CPPIA_NO_JIT");
-		#end
-		args = args.concat(trimArgs(haxeArgs));
-		args = args.concat(['-$target', outputFilePath, className]);
 
 		var cmd = findHaxeExecutable();
 		if (cmd == null) {
 			Log.error('Unable to find haxe executable');
 			return -1;
 		}
+
+		/*
+			 Since haxe won't honor a cppia-based class replacing an existing class, we have to do some trickery
+			For example, if the user included scripts/Test.hx in their build.hxml (making it part of the build), 
+			and also compiled it during runtime to gen/scripts/Test.cppia, those two files would have the same package name.
+			Since haxe (at least cppia) won't honor the dynamically instantiated class over a statically compiled class,
+			we have to do some trickery if we want to be able to override/replace the statically compiled class during runtime.
+
+			Example:
+				sourceDir: "scripts" 
+				outputDir: "dist/scripts"
+				tempDir: "__temp__"
+				generatedScriptNamespace: "gen"
+				className: "scripts.Test" (scripts/Test.hx)
+				target: "cppia"
+
+				1) Create a temporary directory with a subdirectory of the generated script namespace 
+				(e.g. "__temp__/gen")
+				2) Copy the source file (className + ".hx") to this subdirectory, with the relative directory structure intact
+				(e.g. "__temp__/gen/scripts/Test.hx")
+				3) Inject the generated script namespace into the temporary source file's package declaration. (e.g. "package scripts;" > "package gen.scripts;")
+				4) Add the temporary directory as a class path to the haxeArgs. (--cp __temp__)
+				5) Add the generated script namespace to the class name we pass to haxe (e.g. "scripts.Test" > "gen.scripts.Test")
+				6) Compile the temporary source file to the output directory.  (creating "dist/scripts/Test.cppia")
+				7) Delete the temporary directory
+				
+				Now the ScriptLoader can load the compiled file from the output directory and the package name will be different than 
+				the original package name (so both can exist simultaneously) by resolving the different package names.
+				Example ScriptLoader code:
+				 
+				// Try to load the generated class
+				var className = "scripts.Test";
+				var data = sys.io.File.getBytes("dist/scripts/Test.cppia").getData();
+				var module = Module.fromData(data); 
+				module.boot();
+				module.run();
+				resolvedClass = module.resolveClass("gen." + className); -> the runtime loaded (cppia) class
+				if (resolvedClass == null) {
+					resolvedClass = Type.resolveClass("scripts.Test"); -> the compiled (.hx) class
+				}			
+		 */
+
+		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classesInfoPath'];
+
+		try {
+			var tempDirBase = "";
+			
+
+			// create a temporary directory with a subdirectory of the source directory
+			var tempDir = Path.join([rootDir, tempDirBase, generatedScriptNamespace]);
+			if (!FileSystem.exists(tempDir)) {
+				Log.debug('Creating temporary directory: $tempDir');
+				FileSystem.createDirectory(tempDir);
+			} else {
+				Log.debug('Temporary directory already exists: $tempDir');
+			}
+
+			// copy the source file to the temporary directory, including the relative directory structure
+			var tempFilePath = Path.join([tempDir, classNameAsPath + ".hx"]);
+
+			// create the directory structure in the temporary directory
+			var tempFileDir = Path.directory(tempFilePath);
+			if (!FileSystem.exists(tempFileDir)) {
+				Log.debug('Creating temporary directory structure: $tempFileDir');
+				FileSystem.createDirectory(tempFileDir);
+			}
+						
+			if (FileSystem.exists(tempFilePath)) {
+				FileSystem.deleteFile(tempFilePath);
+			}
+			Log.debug('Copying source file to temporary directory: $hxFilePath -> $tempFilePath');
+			File.copy(hxFilePath, tempFilePath);
+
+			// add the parent package name to the module file
+			if (!addParentPackageToModule(tempFilePath, generatedScriptNamespace)) {
+				Log.error('Failed to add parent package name to module file: $tempFilePath');
+				return -1;
+			}
+
+			args.push("-cp");
+			args.push(tempDirBase);
+
+			// add the generated script namespace to the class name
+			className = generatedScriptNamespace + "." + className;
+
+			// copy the import.hx file to the temporary directory, if it exists
+			var importFilePath = Path.join([sourceDir, "import.hx"]);
+			if (FileSystem.exists(importFilePath)) {
+				File.copy(importFilePath, Path.join([tempDir, "import.hx"]));
+			}
+		} catch (e) {
+			Log.error('Failed to copy source file to temporary directory: $hxFilePath');
+			Log.error('Error: ${e.message}');
+			return -1;
+		}
+
+		#if emscripten
+		args.push("-D");
+		args.push("CPPIA_NO_JIT");
+		#end
+		args = args.concat(trimArgs(haxeArgs));
+		args = args.concat(['-$target', outputFilePath, className]);
 
 		Log.debug('Command: $cmd');
 		Log.debug('Args: $args');
@@ -321,8 +600,8 @@ class ScriptCompiler {
 		return classNames;
 	}
 
-	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, target:String, haxeArgs:Array<String>,
-			className:String):Int {
+	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, target:String,
+			haxeArgs:Array<String>, className:String):Int {
 		// strip any preceding '.' from the extension
 		if (StringTools.startsWith(target, ".")) {
 			target = target.substring(1);
@@ -342,7 +621,8 @@ class ScriptCompiler {
 		return result;
 	}
 
-	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = '.', extension:String = "js"):Void {
+	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = '.',
+			extension:String = "js"):Void {
 		var files = getFilesRecursive(scriptsDir);
 
 		// only include .hx files

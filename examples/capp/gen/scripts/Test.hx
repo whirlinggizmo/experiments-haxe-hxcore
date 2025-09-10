@@ -1,4 +1,4 @@
-package scripts;
+package gen.scripts;
 
 import hxcore.util.FPSCounter;
 

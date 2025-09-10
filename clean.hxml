@@ -1,12 +1,7 @@
-
---cmd rm -rf  examples/clib/out
---cmd rm -rf  examples/clib/dist
-
---cmd rm -rf  examples/scripttest/out
---cmd rm -rf  examples/scripttest/dist
-
---cmd rm -rf  examples/flecstest/out
---cmd rm -rf  examples/flecstest/dist
+examples/capp/clean.hxml
+examples/scripttest/clean.hxml
+examples/flecstest/clean.hxml
+examples/systemtest/clean.hxml
 
 --cmd haxelib run hxcpp cache clear
 

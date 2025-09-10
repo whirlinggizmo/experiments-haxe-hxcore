@@ -1,0 +1,4 @@
+# build the script test app
+--cwd examples/scripttest
+build.hxml
+

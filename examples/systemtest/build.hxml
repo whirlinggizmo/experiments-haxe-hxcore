@@ -1,3 +1,6 @@
+--cmd echo "Building SystemTest..."
+--next
+
 
 
 -lib hxcore
@@ -28,7 +31,6 @@
 --cmd cp out/SystemTest dist/SystemTest
 
 
---cmd echo ""
---cmd echo "Build complete."
+--cmd echo "Build of SystemTest complete."
 
 

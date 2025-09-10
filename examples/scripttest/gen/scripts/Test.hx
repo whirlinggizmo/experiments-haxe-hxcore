@@ -1,4 +1,4 @@
-package scripts;
+package gen.scripts;
 
 import hxcore.util.FPSCounter;
 
@@ -6,17 +6,26 @@ class Test extends Script {
 	var thing:String;
 
 	function onAttack(args) {
-		log('Attack received with damage: ${Std.string(args.damage)}');
+		log('Attack received with damagffe: ${Std.string(args.damage)}');
 	} 
 
+
+	override function onUpdate(deltaTimeMS:Float) {
+		log('Updated: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
+	}
+
+	//override function onFixedUpdate(frameDurationMS:Float) {
+	//	log('FixedUpdate: ($frameDurationMS ms)');
+	//}
+
 	override function onLoad() {
-		log("Test.onLoad");
+		log("Test.load");
 		thing = "HELLO";
 		addEventListener("attack", onAttack);
 	}
 
 	override function onReload() {
-		log("Test.onReload");
+		log("Test.reload");
 		addEventListener("attack", onAttack);
 
 		log(ctx);
@@ -24,12 +33,8 @@ class Test extends Script {
 		log("after reload: " + thing);	
 	}
 
-	override function onUpdate(deltaTimeMS:Float) {
-		log('Test.onUpdate: ${Math.round(deltaTimeMS)} ms, FPS: ${FPSCounter.FPS()}');
-	}
-
 	override function onUnload() {
-		log("Test.onUnload");
+		log("Test.unload");
 		ctx.stashed = {
 			thing: "NICE"
 		}

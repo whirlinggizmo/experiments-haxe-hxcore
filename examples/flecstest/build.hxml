@@ -1,3 +1,5 @@
+--cmd echo "Building FlecsTest..."
+--next
 
 
 -lib hxcore
@@ -31,7 +33,6 @@
 --cmd cp out/FlecsTest dist/FlecsTest
 
 
---cmd echo ""
---cmd echo "Build complete."
+--cmd echo "Build of FlecsTest complete."
 
 

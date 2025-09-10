@@ -5,13 +5,13 @@ import js.lib.Promise;
 import hxcore.logging.Log;
 import hxcore.util.TypeUtils;
 import hxcore.scripting.Script;
-
+import hxcore.scripting.IScriptLoader;
 //
 // NOTE:  This code is **very** stale, work has been focused on the cpp version
 // TODO:  Update this?
 //
 
-class ScriptLoader {
+class ScriptLoader implements IScriptLoader {
 	private static var scriptCache:Map<String, Script> = new Map<String, Script>();
 	public static var scriptDirectory:String = "./scripts/";
 	public static var scriptSourceDirectory:String = "./src/";

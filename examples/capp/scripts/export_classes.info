@@ -35,9 +35,9 @@ interface sys.db.ResultSet
 class sys.db._Mysql.D
 interface sys.db.Connection
 class sys.FileSystem
+class scripts.Test
 class hxcore.util.UpdateHandler
 class hxcore.util.TypeUtils
-class hxcore.util.PathUtils
 class hxcore.util.MathUtils
 class hxcore.util.FPSCounter
 class hxcore.scripting.ScriptLoader
@@ -85,6 +85,7 @@ class haxe.ds.StringMap
 class haxe.ds.ObjectMap
 class haxe.ds._List.ListNode
 class haxe.ds.List
+class haxe.ds.IntMap
 class haxe.ds.GenericStack
 class haxe.ds._GenericStack.GenericStackIterator
 class haxe.ds.GenericCell
@@ -132,6 +133,7 @@ class cpp.vm.ThreadInfo
 class cpp.vm.StackFrame
 class cpp.vm.Parameter
 class cpp.Lib
+interface haxe.IMap
 class cpp.Finalizable
 class Xml
 class _Xml.XmlType_Impl_
@@ -144,13 +146,9 @@ class StringBuf
 class Std
 class Reflect
 class Lambda
-class _HaxeCBridge.CustomEventLoop_Impl_
 class _HaxeCBridge.Internal
-class haxe.ds.IntMap
-interface haxe.IMap
 class _HaxeCBridge.Int64Map_Impl_
 class HaxeCBridge
-class _HaxeCBridge.HaxeObject_Impl_
 class EReg
 class DateTools
 class Date
@@ -265,6 +263,6 @@ file hxcore/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experime
 file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/capp/hxcore/scripting/ScriptLoader.cpp.hx
 file hxcore/util/FPSCounter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/FPSCounter.hx
 file hxcore/util/MathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/MathUtils.hx
-file hxcore/util/PathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/PathUtils.hx
 file hxcore/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/TypeUtils.hx
 file hxcore/util/UpdateHandler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/UpdateHandler.hx
+file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/capp/scripts/Test.hx

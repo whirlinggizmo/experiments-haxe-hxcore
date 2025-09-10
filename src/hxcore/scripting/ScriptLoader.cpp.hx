@@ -15,15 +15,7 @@ import sys.FileSystem;
 import cpp.cppia.Module;
 #end
 #end
-typedef LoadedCallback = (scriptName:String, scriptInfo:ScriptInfo) -> Void;
 
-typedef ScriptInfo = {
-	var ?className:String;
-	var ?script:Script;
-	var ?loadedCallback:LoadedCallback;
-	var ?isExternal:Bool;
-	var ?sourcePath:String;
-}
 
 class ScriptLoader {
 	private static var scriptCache:Map<String, ScriptInfo> = new Map<String, ScriptInfo>();
@@ -33,7 +25,6 @@ class ScriptLoader {
 	private static var hotReloadEnabled:Bool = false;
 	private static var hotCompileEnabled:Bool = false;
 	private static var externalScriptsEnabled:Bool = false;
-	private static var internalScriptNamespace:String = "scripts";
 
 	#if sys
 	private static var haxeSourceFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
@@ -307,9 +298,14 @@ class ScriptLoader {
 			module.boot();
 			module.run();
 
-			resolvedClass = module.resolveClass(className);
+			// prepend the generated script namespace to the class name if it's not empty
+			var generatedScriptNamespace = ScriptCompiler.getGeneratedScriptNamespace();
+			var generatedClassName = (generatedScriptNamespace.length > 0) ? generatedScriptNamespace + "." + className : className;
+			
+			// try to resolve the generated class name from the loaded module
+			resolvedClass = module.resolveClass(generatedClassName);
 			if (resolvedClass == null) {
-				throw 'Failed to resolve cppia class: $className';
+				throw 'Failed to resolve cppia class: $generatedClassName';
 			}
 			scriptInfo.isExternal = true;
 			scriptInfo.sourcePath = sourceFilePath;
@@ -319,18 +315,17 @@ class ScriptLoader {
 		#end
 
 		if (resolvedClass == null) {
-			// we didn't find the class in the script directory (or it's disabled), try the internal scripts
-			var internalClassName = (internalScriptNamespace.length > 0) ? internalScriptNamespace + "." + className : className;
+			// we didn't find the class in the generated script directory (or it's disabled), try the baked in scripts
 			try {
-				Log.debug('Trying to resolve class from built-in scripts: $internalClassName');
-				resolvedClass = Type.resolveClass(internalClassName);
+				Log.debug('Trying to resolve class from built-in scripts: $className');
+				resolvedClass = Type.resolveClass(className);
 				if (resolvedClass == null) {
-					throw 'Failed to resolve class from built-in scripts: $internalClassName';
+					throw 'Failed to resolve class from built-in scripts: $className';
 				}
 				scriptInfo.isExternal = false;
-				scriptInfo.sourcePath = internalClassName;
+				scriptInfo.sourcePath = className;
 			} catch (e:Dynamic) {
-				Log.error('Failed to resolve built-in class: $internalClassName\n${e.message}');
+				Log.error('Failed to resolve built-in class: $className\n${e.message}');
 				return null;
 			}
 		}

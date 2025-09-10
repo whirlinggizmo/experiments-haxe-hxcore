@@ -1,6 +1,6 @@
 # Compiler and linker settings
 CXX      = g++
-CXXFLAGS = -std=c++11 -I./dist/lib
+CXXFLAGS = -std=c++11 -I./dist/lib -Os
 LDFLAGS  = -L./dist/lib -lhxcore
 
 # Target executable and source files

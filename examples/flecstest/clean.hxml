@@ -1,0 +1,4 @@
+--cmd rm -rf  dist
+--cmd rm -rf  out
+
+--cmd haxelib run hxcpp cache clear

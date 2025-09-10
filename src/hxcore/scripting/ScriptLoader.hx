@@ -13,10 +13,15 @@ class ScriptLoader {
 	private static var scriptCache:Map<String, Script> = new Map<String, Script>();
 	public static var scriptDirectory:String = "./scripts/";
 	public static var scriptSourceDirectory:String = "./src/";
+	private static var generatedScriptNamespace:String = "gen";
 
-	public static function load(scriptName:String, onLoaded:String->Script->Void):Void {
+	public static function getGeneratedScriptNamespace():String {
+		return generatedScriptNamespace;
+	}
+
+	public static function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
 		if (scriptCache.exists(scriptName)) {
-			onLoaded(scriptName, scriptCache.get(scriptName));
+			//onLoaded(scriptName, scriptCache.get(scriptName));
 			return;
 		}
 
@@ -50,8 +55,15 @@ class ScriptLoader {
 			scriptCache.set(scriptName, script);
 			script.scriptName = scriptName; 
 			script.scriptDirectory = scriptDirectory;
+			var scriptInfo = {
+				className: scriptName,
+				script: script,
+				loadedCallback: onLoaded,
+				isExternal: false,
+				sourcePath: scriptDirectory + '/' + scriptName + '.hx'
+			};
 			if (onLoaded != null) {
-				onLoaded(scriptName, script); // Call the callback with the loaded instance
+				onLoaded(scriptName, scriptInfo); // Call the callback with the loaded instance
 			}
 			return;
 		} else {

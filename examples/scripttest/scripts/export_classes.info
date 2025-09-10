@@ -68,6 +68,7 @@ class hxcore.scripting.ScriptHost
 interface hxcore.scripting.IScriptHost
 class hxcore.scripting.ScriptCompiler
 class hxcore.scripting.Script
+interface hxcore.scripting.IScriptLoader
 class hxcore.logging.Log
 class hxcore.logging._Log.LogLevel_Impl_
 class hxcore.io._FileWatcher.FileWatcher_Fields_

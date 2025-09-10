@@ -1,8 +1,14 @@
+--cmd echo "Building CApp..."
+--next
+
+
 -cp src/hx
 -cp ../../src
--dce std
+-dce full
+--no-traces
+-D analyzer-optimize
 
---debug
+#--debug
 # vscode debugger 
 #-lib hxcpp-debug-server
 
@@ -16,8 +22,7 @@
 # enable cppia scripting...
 -D scriptable 
 # ...or bake the scripts into the binary
-#-cp scripts
-#Test
+scripts.Test
 
 --cmd mkdir -p dist/lib
 --cmd cp out/lib/libhxcore.a dist/lib/libhxcore.a
@@ -31,7 +36,7 @@
 
 # compile the test script to cppia
 -lib hxcore
---macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/app/scripts', 'cppia', [], 'Test')
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/app/scripts', '', 'cppia', [], 'scripts.Test')
 --next
 
 # create the c app
@@ -39,6 +44,7 @@
 --cmd make -f Makefile 
 --next
 
+--cmd echo "Build of CApp complete."
 
 # just tidying up
 #--cmd rm export_classes.info

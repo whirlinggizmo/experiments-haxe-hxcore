@@ -1,3 +1,5 @@
+--cmd echo "Building ScriptTest..."
+--next
 
 
 # generate the list of all script files
@@ -60,7 +62,6 @@ scripts.Test
 #-lib hxcore
 #--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
 
---cmd echo ""
---cmd echo "Build complete."
+--cmd echo "Build of ScriptTest complete."
 
 

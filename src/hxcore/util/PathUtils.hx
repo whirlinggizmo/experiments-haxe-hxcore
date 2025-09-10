@@ -71,4 +71,18 @@ class PathUtils {
 	
 		return parts.slice(0, parts.length - 1).join("/");
 	}
+
+	public static function deleteDirectoryRecursively(path:String):Void {
+		if (sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path)) {
+			var entries = sys.FileSystem.readDirectory(path);
+			for (entry in entries) {
+				if (sys.FileSystem.isDirectory(path + '/' + entry)) {
+					PathUtils.deleteDirectoryRecursively(path + '/' + entry);
+					sys.FileSystem.deleteDirectory(path + '/' + entry);
+				} else {
+					sys.FileSystem.deleteFile(path + '/' + entry);
+				}
+			}
+		}
+	}
 }

@@ -1,5 +1,4 @@
-// The scripts directory is added to the class path, so no package required 
-//package;
+package scripts;
 
 import hxcore.util.FPSCounter;
 

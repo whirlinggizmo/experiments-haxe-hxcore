@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
     // we can run the update loop
     hxcore_API_run(instance);
-    sleep(5);
+    sleep(30);
     // ... or pump update() manually
     /*
     bool quitFlag = hxcore_API_update(instance, 0.016); // call update() with a deltaTime value or...
