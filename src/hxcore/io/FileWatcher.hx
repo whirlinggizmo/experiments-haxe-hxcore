@@ -59,13 +59,10 @@ class FileWatcher {
 			return;
 		}
 
-
-
-
-		if (!FileSystem.exists(rootDirectory) || !FileSystem.isDirectory(rootDirectory)) {
-			Log.error('FileWatcher: Invalid root directory: $rootDirectory');
-			return;
-		}
+		//if (!FileSystem.exists(rootDirectory) || !FileSystem.isDirectory(rootDirectory)) {
+		//	Log.error('FileWatcher: Invalid root directory: $rootDirectory');
+		//	return;
+		//}
 
 		try {
 			this.filter = filter != null ? new EReg(filter, "") : null;
@@ -113,6 +110,11 @@ class FileWatcher {
 		var currentFiles = new Map<String, Float>();
 
 		function processDirectory(dir:String) {
+
+			if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) {
+				return;
+			}
+
 			if (isIgnored(dir, [ignoredDirectoriesRegex])) {
 				return;
 			}

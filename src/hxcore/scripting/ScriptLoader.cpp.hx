@@ -36,9 +36,7 @@ class ScriptLoader {
 	// ============================================================================
 
 	private static function normalizePath(path:String):String {
-		if (!Path.isAbsolute(path)) {
-			path = Path.join([Path.directory(Sys.programPath()), path]);
-		}
+		path = ensureAbsolutePath(path);
 		return Path.normalize(path);
 	}
 
@@ -392,7 +390,7 @@ class ScriptLoader {
 				
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
 				// Use the new macro-based approach instead of temporary files
-				var result = ScriptCompiler.compileScriptInternalMacro("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
+				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
 
 				if (result != 0) {
 					// If the compilation failed, the script on disk will be the old version.

@@ -51,7 +51,11 @@ enum abstract LogLevel(Int) from Int to Int {
 			// rjk changed the position layout so vscode will see it as a link
 			p = pos.fileName + ":" + pos.lineNumber;
 			if (!Path.isAbsolute(pos.fileName)) {
-				p = "./" + p;
+				p = Path.join([Sys.getCwd(), p]);
+				trace('p: $p');
+				trace('Sys.getCwd(): ${Sys.getCwd()}');
+				trace('Sys.programPath(): ${Sys.programPath()}');
+				//p = "./" + p;
 			}
 			fmt = (tag != null ? tag : '[ $l ] ') + '[$p]' + ': $s';
 			if (pos.fileName.length > longest) {

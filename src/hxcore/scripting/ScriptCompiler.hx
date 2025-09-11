@@ -299,7 +299,7 @@ class ScriptCompiler {
 	 * Compiles a script using macro-based namespace injection instead of temporary files.
 	 * This is the new, cleaner approach that uses :native metadata to inject namespaces.
 	 */
-	public static function compileScriptInternalMacro(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
+	public static function compileScriptInternalMacroUNUSED(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
 			haxeArgs:Array<String>, className:String):Int {
 		if (sourceDir == null) {
 			Log.error("Please specify a source directory (e.g. 'scripts').");
@@ -380,9 +380,8 @@ class ScriptCompiler {
 		// Build haxe arguments with macro-based namespace injection
 		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classesInfoPath'];
 		
-		// Add global macro to automatically inject namespace into Script-derived classes
-		args.push("--macro");
-		args.push('hxcore.macros.NamespaceInjector.autoInject("$generatedScriptNamespace")');
+		// Note: Using temporary file approach instead of macro for now
+		// TODO: Implement proper macro-based namespace injection
 		
 		// Add the generated script namespace to the class name
 		var injectedClassName = generatedScriptNamespace + "." + className;
@@ -420,7 +419,7 @@ class ScriptCompiler {
 	 * Legacy method that uses temporary files for namespace injection.
 	 * Kept for backward compatibility and as a fallback.
 	 */
-	public static function compileScriptInternallll(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
+	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
 			haxeArgs:Array<String>, className:String):Int {
 		if (sourceDir == null) {
 			Log.error("Please specify a source directory (e.g. 'scripts').");
@@ -784,7 +783,7 @@ class ScriptCompiler {
 		rootDir = rootDir ?? Sys.getCwd();
 		haxeArgs = haxeArgs ?? [];
 
-		var result = compileScriptInternalMacro(rootDir, scriptsDir, outputDir, classesInfoPath, target, haxeArgs, className);
+		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, target, haxeArgs, className);
 
 		if (result != 0) {
 			Log.error("Failed to compile class: " + className);
@@ -819,7 +818,7 @@ class ScriptCompiler {
 		Log.info('Package: $packageName, Class: $className');
 
 		// Compile the script
-		var result = compileScriptInternalMacro(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, target, [], className);
+		var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, target, [], className);
 
 		if (result != 0) {
 			Log.error("Failed to compile script from filename: " + filename);
@@ -848,7 +847,7 @@ class ScriptCompiler {
 			// replace slashes with dots
 			fileName = fileName.split("/").join(".");
 
-			var result = compileScriptInternalMacro(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
+			var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
 
 			if (result != 0) {
 				Log.error("Failed to compile class: " + fileName);
@@ -861,7 +860,6 @@ class ScriptCompiler {
 	public static function main() {
 		Log.setLevel(LogLevel.Debug);
 		Log.debug("ScriptCompiler starting");
-		Log.rawOutput = true;
 		// This is the path of this file?
 		// var rootDir = FileSystem.fullPath(Sys.programPath());
 		// rootDir = Path.directory(rootDir);
@@ -1004,7 +1002,7 @@ class ScriptCompiler {
 
 		for (className in classNames) {
 			Log.debug('Compiling ${Path.join([rootDir, sourceDirectory, className + ".hx"])} to ${Path.join([rootDir, outputDirectory, className + "." + target])}...');
-			ScriptCompiler.compileScriptInternalMacro(rootDir, sourceDirectory, outputDirectory, classesInfoPath, target, args, className);
+			ScriptCompiler.compileScriptInternal(rootDir, sourceDirectory, outputDirectory, classesInfoPath, target, args, className);
 		}
 
 		Log.debug("ScriptCompiler finished");
