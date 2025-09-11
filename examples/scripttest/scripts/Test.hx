@@ -11,9 +11,8 @@ class Test extends Script {
 		log('Attack received with damage: ${Std.string(args.damage)}');
 	} 
 
-
 	override function onUpdate(deltaTimeMS:Float) {
-		log('Update: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
+		log('UpdateII: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
 	}
 
 	//override function onFixedUpdate(frameDurationMS:Float) {

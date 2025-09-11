@@ -1,0 +1,7 @@
+#-cp src 
+-lib hxcore
+-D cppia
+--macro hxcore.macros.NamespaceInjector.setNative("scripts.Test","gen.scripts.Test")
+-cppia gen/scripts/Test.cppia
+scripts.Test
+

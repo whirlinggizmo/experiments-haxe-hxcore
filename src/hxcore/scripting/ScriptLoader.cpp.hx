@@ -1,6 +1,7 @@
 // src/hxcore/scripting/ScriptLoader.cpp.hx
 package hxcore.scripting;
 
+import sys.io.File;
 import hxcore.logging.Log;
 import hxcore.util.TypeUtils;
 import hxcore.scripting.Script;
@@ -15,8 +16,6 @@ import sys.FileSystem;
 import cpp.cppia.Module;
 #end
 #end
-
-
 class ScriptLoader {
 	private static var scriptCache:Map<String, ScriptInfo> = new Map<String, ScriptInfo>();
 	private static var scriptDirectory:String;
@@ -60,18 +59,18 @@ class ScriptLoader {
 
 	private static function buildFileFilter(className:String, extension:String):String {
 		var filter = className;
-		
+
 		// Convert package dots to path separators
 		filter = StringTools.replace(filter, ".", "/");
-		
+
 		// Escape special regex characters
 		filter = StringTools.replace(filter, "/", "\\/");
 		filter = StringTools.replace(filter, "*", ".*");
 		filter = StringTools.replace(filter, "?", "\\?");
-		
+
 		// Add extension
 		filter = filter + "\\." + extension;
-		
+
 		// Make it an exact match
 		return "^" + filter + "$";
 	}
@@ -217,7 +216,6 @@ class ScriptLoader {
 
 		classesInfoPath = Path.join([scriptDirectory, "export_classes.info"]);
 
-
 		if (haxeSourceFileWatchers.exists(scriptName)) {
 			haxeSourceFileWatchers[scriptName].stop();
 			haxeSourceFileWatchers.remove(scriptName);
@@ -262,19 +260,23 @@ class ScriptLoader {
 				throw 'Script file not found: $sourceFilePath';
 			}
 
-			final data = sys.io.File.getBytes(sourceFilePath).getData();
+			final fileBytes = File.getBytes(sourceFilePath);
+			if (fileBytes == null) {
+				throw 'Failed to load module (bad data): $sourceFilePath';
+			}
+			final data = fileBytes.getData();
 			if (data == null) {
 				throw 'Failed to load module (bad data): $sourceFilePath';
 			}
 
 			final module = Module.fromData(data);
 			module.boot();
-			module.run();
+			// module.run();
 
 			// prepend the generated script namespace to the class name if it's not empty
 			var generatedScriptNamespace = ScriptCompiler.getGeneratedScriptNamespace();
 			var generatedClassName = (generatedScriptNamespace.length > 0) ? generatedScriptNamespace + "." + className : className;
-			
+
 			// try to resolve the generated class name from the loaded module
 			resolvedClass = module.resolveClass(generatedClassName);
 			if (resolvedClass == null) {
@@ -283,7 +285,10 @@ class ScriptLoader {
 			scriptInfo.isExternal = true;
 			scriptInfo.sourcePath = sourceFilePath;
 		} catch (e:Dynamic) {
-			Log.warn('Failed to load cppia module: $sourceFilePath\n${e.message}');
+			#if cpp
+			Sys.println(haxe.CallStack.exceptionStack());
+			#end
+			Log.warn('Failed to load cppia module: $sourceFilePath\n' + Std.string(e));
 		}
 		#end
 
@@ -362,10 +367,6 @@ class ScriptLoader {
 			return;
 		}
 
-		// TODO: do we want to include the script directory as the package, or add the script directory class path when building?
-		// var fullScriptName = scriptDirectory + '.' + scriptName;
-		// var fullScriptName = scriptName;
-
 		// trace("Loading script: " + scriptName);
 		// trace("Script directory: " + scriptDirectory);
 		// trace("Script source directory: " + scriptSourceDirectory);
@@ -382,12 +383,13 @@ class ScriptLoader {
 				// ensure the scriptSourceDirectory appears as a directory by appending a trailing slash
 				scriptSourceDirectory = Path.addTrailingSlash(scriptSourceDirectory);
 
-				var haxeArgs = ["-dce", "full", "-cp", "lib"];
+				var haxeArgs = ["-lib", "hxcore"];//"-dce", "no"];
 
-				var scriptSourceAbsolutePath = if (!Path.isAbsolute(scriptSourceDirectory))Path.join([Sys.getCwd(), scriptSourceDirectory]) else scriptSourceDirectory;
+				var scriptSourceAbsolutePath = if (!Path.isAbsolute(scriptSourceDirectory)) Path.join([Sys.getCwd(), scriptSourceDirectory]) else
+					scriptSourceDirectory;
 				var classesInfoAbsolutePath = if (!Path.isAbsolute(classesInfoPath)) Path.join([Sys.getCwd(), classesInfoPath]) else classesInfoPath;
-				classesInfoPath =if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(scriptSourceDirectory, classesInfoPath) else classesInfoPath;
-				
+				classesInfoPath = if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(scriptSourceDirectory, classesInfoPath) else classesInfoPath;
+
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
 				// Use the new macro-based approach instead of temporary files
 				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
@@ -396,10 +398,10 @@ class ScriptLoader {
 					// If the compilation failed, the script on disk will be the old version.
 					// Should we call onLoaded(scriptName, null) if the compilation fails?
 					// Log.error("Failed to compile script: " + scriptName);
-					//cachedScriptInfo = scriptCache.get(scriptName);
-					//if (cachedScriptInfo != null && cachedScriptInfo.loadedCallback != null) {
+					// cachedScriptInfo = scriptCache.get(scriptName);
+					// if (cachedScriptInfo != null && cachedScriptInfo.loadedCallback != null) {
 					//	cachedScriptInfo.loadedCallback(scriptName, null);
-					//}
+					// }
 					onLoaded(scriptName, null);
 					return;
 				}
@@ -410,7 +412,6 @@ class ScriptLoader {
 		// If it changes, reload the script.
 		if (hotReloadEnabled) {
 			createHotReloadWatcher(scriptDirectory, scriptName, (filename:String) -> {
-
 				if (filename == null) {
 					Log.error("Reload Watcher: Failed to reload script file (null filename): " + scriptName);
 					return;
