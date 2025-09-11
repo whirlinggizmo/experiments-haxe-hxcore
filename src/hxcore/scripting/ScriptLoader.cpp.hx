@@ -391,7 +391,8 @@ class ScriptLoader {
 				classesInfoPath =if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(scriptSourceDirectory, classesInfoPath) else classesInfoPath;
 				
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
-				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
+				// Use the new macro-based approach instead of temporary files
+				var result = ScriptCompiler.compileScriptInternalMacro("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
 
 				if (result != 0) {
 					// If the compilation failed, the script on disk will be the old version.

@@ -1,10 +1,9 @@
 package hxcore.scripting;
 
 import sys.io.FileSeek;
-import haxe.Log;
+import hxcore.logging.Log;
 import sys.FileSystem;
 import haxe.io.Path;
-import hxcore.logging.Log;
 import hxcore.util.PathUtils;
 import sys.io.File;
 import sys.io.Process;
@@ -20,6 +19,11 @@ class ScriptCompiler {
 
 	public static function getGeneratedScriptNamespace():String {
 		return generatedScriptNamespace;
+	}
+
+	public static function setGeneratedScriptNamespace(namespace:String):Void {
+		generatedScriptNamespace = namespace;
+		Log.info('Generated script namespace set to: $namespace');
 	}
 
 	public static function findHaxeExecutable():Null<String> {
@@ -291,7 +295,132 @@ class ScriptCompiler {
 		return true;
 	}
 
-	public static function compileScriptInternal(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
+	/**
+	 * Compiles a script using macro-based namespace injection instead of temporary files.
+	 * This is the new, cleaner approach that uses :native metadata to inject namespaces.
+	 */
+	public static function compileScriptInternalMacro(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
+			haxeArgs:Array<String>, className:String):Int {
+		if (sourceDir == null) {
+			Log.error("Please specify a source directory (e.g. 'scripts').");
+			return -1;
+		}
+		if (outputDir == null) {
+			Log.error("Please specify an output directory (e.g. 'gen/scripts').");
+			return -1;
+		}
+
+		if (className == null) {
+			Log.error("Please specify a class name (e.g. 'Test' for scripts/Test.hx).");
+			return -1;
+		}
+
+		rootDir = rootDir ?? Sys.getCwd();
+		rootDir = ensureAbsolute(Sys.getCwd(), rootDir);
+		sourceDir = ensureAbsolute(rootDir, sourceDir);
+		outputDir = ensureAbsolute(rootDir, outputDir);
+		classesInfoPath = ensureAbsolute(rootDir, classesInfoPath);
+
+		rootDir = Path.addTrailingSlash(rootDir);
+		sourceDir = Path.addTrailingSlash(sourceDir);
+		outputDir = Path.addTrailingSlash(outputDir);
+
+		if (StringTools.startsWith(target, "."))
+			target = target.substring(1);
+
+		var classNameAsPath = StringTools.replace(className, ".", "/");
+		var classPath = new Path(classNameAsPath);
+		var packagePath = classPath.dir ?? "";
+		var outputFileName = '${classPath.file}.$target';
+		var outputFileDir = Path.join([outputDir, packagePath]);
+		var outputFilePath = Path.join([outputFileDir, outputFileName]);
+		var hxFilePath = Path.join([rootDir, classNameAsPath + ".hx"]);
+
+		Log.debug('Compiling class with macro injection: $className');
+		Log.debug('Root dir: $rootDir');
+		Log.debug('Source file: $hxFilePath');
+		Log.debug('Output file: $outputFilePath');
+		Log.debug('ClassesInfo file: $classesInfoPath');
+
+		// Validate paths
+		if (FileSystem.exists(rootDir) && !FileSystem.isDirectory(rootDir)) {
+			Log.error('Root directory is not a directory: $rootDir');
+			return -1;
+		}
+		if (FileSystem.exists(sourceDir) && !FileSystem.isDirectory(sourceDir)) {
+			Log.error('Source directory is not a directory: $sourceDir');
+			return -1;
+		}
+
+		if (!FileSystem.exists(classesInfoPath) || FileSystem.isDirectory(classesInfoPath)) {
+			Log.error('Classes info file is not a file: $classesInfoPath');
+			return -1;
+		}
+
+		if (!FileSystem.exists(hxFilePath) || FileSystem.isDirectory(hxFilePath)) {
+			Log.error('Class file not found: $hxFilePath');
+			return -1;
+		}
+
+		if (FileSystem.exists(outputFilePath)) {
+			FileSystem.deleteFile(outputFilePath);
+		}
+
+		if (!FileSystem.exists(outputFileDir)) {
+			Log.debug('Creating output directory: $outputFileDir');
+			FileSystem.createDirectory(outputFileDir);
+		}
+
+		var cmd = findHaxeExecutable();
+		if (cmd == null) {
+			Log.error('Unable to find haxe executable');
+			return -1;
+		}
+
+		// Build haxe arguments with macro-based namespace injection
+		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classesInfoPath'];
+		
+		// Add global macro to automatically inject namespace into Script-derived classes
+		args.push("--macro");
+		args.push('hxcore.macros.NamespaceInjector.autoInject("$generatedScriptNamespace")');
+		
+		// Add the generated script namespace to the class name
+		var injectedClassName = generatedScriptNamespace + "." + className;
+
+		#if emscripten
+		args.push("-D");
+		args.push("CPPIA_NO_JIT");
+		#end
+		args = args.concat(trimArgs(haxeArgs));
+		args = args.concat(['-$target', outputFilePath, injectedClassName]);
+
+		Log.debug('Command: $cmd');
+		Log.debug('Args: $args');
+		Log.debug('Full command: $cmd ' + args.join(" "));
+
+		try {
+			final process = new Process(cmd, args);
+			var stdout = process.stdout.readAll().toString();
+			var stderr = process.stderr.readAll().toString();
+			var returnCode = process.exitCode();
+			process.close();
+			if (returnCode != 0) {
+				Log.error('Haxe returned an error while compiling: $injectedClassName:\n$stderr');
+				return -1;
+			}
+		} catch (e) {
+			Log.error('Haxe returned an error while compiling: $injectedClassName:\n${e.message}');
+			return -1;
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Legacy method that uses temporary files for namespace injection.
+	 * Kept for backward compatibility and as a fallback.
+	 */
+	public static function compileScriptInternallll(rootDir:String, sourceDir:String, outputDir:String, classesInfoPath:String, target:String,
 			haxeArgs:Array<String>, className:String):Int {
 		if (sourceDir == null) {
 			Log.error("Please specify a source directory (e.g. 'scripts').");
@@ -655,7 +784,7 @@ class ScriptCompiler {
 		rootDir = rootDir ?? Sys.getCwd();
 		haxeArgs = haxeArgs ?? [];
 
-		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, target, haxeArgs, className);
+		var result = compileScriptInternalMacro(rootDir, scriptsDir, outputDir, classesInfoPath, target, haxeArgs, className);
 
 		if (result != 0) {
 			Log.error("Failed to compile class: " + className);
@@ -690,7 +819,7 @@ class ScriptCompiler {
 		Log.info('Package: $packageName, Class: $className');
 
 		// Compile the script
-		var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, target, [], className);
+		var result = compileScriptInternalMacro(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, target, [], className);
 
 		if (result != 0) {
 			Log.error("Failed to compile script from filename: " + filename);
@@ -719,7 +848,7 @@ class ScriptCompiler {
 			// replace slashes with dots
 			fileName = fileName.split("/").join(".");
 
-			var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
+			var result = compileScriptInternalMacro(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
 
 			if (result != 0) {
 				Log.error("Failed to compile class: " + fileName);
@@ -875,7 +1004,7 @@ class ScriptCompiler {
 
 		for (className in classNames) {
 			Log.debug('Compiling ${Path.join([rootDir, sourceDirectory, className + ".hx"])} to ${Path.join([rootDir, outputDirectory, className + "." + target])}...');
-			ScriptCompiler.compileScriptInternal(rootDir, sourceDirectory, outputDirectory, classesInfoPath, target, args, className);
+			ScriptCompiler.compileScriptInternalMacro(rootDir, sourceDirectory, outputDirectory, classesInfoPath, target, args, className);
 		}
 
 		Log.debug("ScriptCompiler finished");
