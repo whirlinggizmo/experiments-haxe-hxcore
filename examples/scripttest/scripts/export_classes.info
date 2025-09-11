@@ -383,4 +383,4 @@ file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/.cursor/extensions/vsh
 file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/.cursor/extensions/vshaxe.hxcpp-debugger-1.2.4-universal/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx
 file hxcpp/debug/jsonrpc/eval/Parser.hx /home/rknopf/.cursor/extensions/vshaxe.hxcpp-debugger-1.2.4-universal/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Parser.hx
 file hxcpp/debug/jsonrpc/eval/Tools.hx /home/rknopf/.cursor/extensions/vshaxe.hxcpp-debugger-1.2.4-universal/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Tools.hx
-file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/src/scripts/Test.hx
+file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/scripts/Test.hx

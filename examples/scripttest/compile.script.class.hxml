@@ -2,7 +2,7 @@
 --run hxcore.scripting.ScriptCompiler
 --target cppia
 --sourceDir scripts
---outputDir dist/scripts
+--outputDir gen
 
 
 # Leave the --class dangling so we can add one on the command line (e.g. haxe compile.script.hxml Test)

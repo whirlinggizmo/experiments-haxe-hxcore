@@ -1,6 +1,5 @@
 package;
 
-import haxe.Constraints.Function;
 import hxcore.util.FPSCounter;
 import hxcore.scripting.ScriptLoader;
 import hxcore.ecs.Entity;
@@ -50,7 +49,7 @@ class ScriptTest {
 			return;
 		}
 		// Attach the script to the entity
-		entity.attachScript("Test", (scriptInstance) -> {
+		entity.attachScript("scripts.Test", (scriptInstance) -> {
 			if (scriptInstance == null) {
 				Log.warn("Failed to create script: Test");
 			}
@@ -107,7 +106,6 @@ class ScriptTest {
 		}
 	 */
 	static function main() {
-		Log.info('Hello, World!');
 		var scriptDirectory = null;
 		var scriptSourceDirectory = null;
 		var enableHotReload = false;

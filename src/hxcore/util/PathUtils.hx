@@ -12,7 +12,23 @@ class PathUtils {
 		return new EReg("^" + regexPattern + "$", "");
 	}
 
-	// credit to https://gist.github.com/haxiomic/98c61a09f6028fd72dccc0053385af76
+	/**
+	 * Calculates the relative path from one absolute path to another.
+	 * 
+	 * Given two absolute paths, returns the relative path that would navigate
+	 * from the first path to the second path using "../" notation.
+	 * 
+	 * @param relativeToAbsolute The base path (absolute) to calculate relative path from
+	 * @param pathAbsolute The target path (absolute) to calculate relative path to
+	 * @return The relative path string, or the original pathAbsolute if either path is not absolute
+	 * 
+	 * @example
+	 * relativePath("/home/user/project", "/home/user/project/src/main.hx") // returns "src/main.hx"
+	 * relativePath("/home/user/project/src", "/home/user/project/lib") // returns "../lib"
+	 * relativePath("/home/user/project", "/home/user/project") // returns ""
+	 * 
+	 * @credit https://gist.github.com/haxiomic/98c61a09f6028fd72dccc0053385af76
+	 */
 	public static function relativePath(relativeToAbsolute: String, pathAbsolute: String) {
 
 		if (!Path.isAbsolute(relativeToAbsolute)) {

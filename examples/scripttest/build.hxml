@@ -46,13 +46,13 @@ scripts.Test
 
 
 # copy the executable to the dist directory
---cmd mkdir -p dist
---cmd pkill -9 ScriptTest || true
---cmd cp out/ScriptTest dist/ScriptTest
+#--cmd mkdir -p dist
+#--cmd pkill -9 ScriptTest || true
+#--cmd cp out/ScriptTest dist/ScriptTest
 
 # create a scripts directory, in case it doesn't exist
---cmd mkdir -p dist/scripts
---next
+#--cmd mkdir -p dist/scripts
+#--next
 
 # compile the Test script
 # We could also call "compile.script.hxml Test" from this hxml, but that sends *everything* after the call to the hxml as args to ScriptCompiler (including --next, --cmd, etc)
@@ -64,4 +64,7 @@ scripts.Test
 
 --cmd echo "Build of ScriptTest complete."
 
-
+#--next
+# run the scripttest app
+#--cmd ./dist/ScriptTest --sourceDir ../scripts --scriptDir ./scripts 
+#--next

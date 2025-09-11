@@ -1,5 +1,6 @@
 package hxcore.scripting;
 
+import sys.io.FileSeek;
 import haxe.Log;
 import sys.FileSystem;
 import haxe.io.Path;
@@ -7,16 +8,16 @@ import hxcore.logging.Log;
 import hxcore.util.PathUtils;
 import sys.io.File;
 import sys.io.Process;
-//import hxcore.scripting.ScriptLoader;
 
+// import hxcore.scripting.ScriptLoader;
 // A script generator that generates "script" files from .hx files
 // hxml can't do variables, so we use this
 // Usage example: Compile 'Test.hx' in the 'scripts' directory to 'Test.cppia' in the 'dist/scripts' directory:
 // haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName scripts.Test --target cppia --outputDir dist/scripts
 @:keep
 class ScriptCompiler {
-
 	private static var generatedScriptNamespace:String = "gen";
+
 	public static function getGeneratedScriptNamespace():String {
 		return generatedScriptNamespace;
 	}
@@ -325,11 +326,12 @@ class ScriptCompiler {
 		var outputFileName = '${classPath.file}.$target';
 		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
-		//var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
+		// var hxFilePath = Path.join([sourceDir, classNameAsPath + ".hx"]);
 		var hxFilePath = Path.join([rootDir, classNameAsPath + ".hx"]);
 
 		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
+		var tempDirBase = ""; // "__temp__";
 
 		Log.debug('Compiling class: $className');
 		Log.debug('Root dir: $rootDir');
@@ -337,21 +339,34 @@ class ScriptCompiler {
 		Log.debug('Output file: $outputFilePath');
 		Log.debug('ClassesInfo file: $classesInfoPath');
 
-		if (FileSystem.exists(outputFilePath))
-			FileSystem.deleteFile(outputFilePath);
+		// check to make sure directories are actually directories
+		if (FileSystem.exists(rootDir) && !FileSystem.isDirectory(rootDir)) {
+			Log.error('Root directory is not a directory: $rootDir');
+			return -1;
+		}
+		if (FileSystem.exists(sourceDir) && !FileSystem.isDirectory(sourceDir)) {
+			Log.error('Source directory is not a directory: $sourceDir');
+			return -1;
+		}
 
-		if (!FileSystem.exists(outputFileDir))
-			Log.debug('Creating output directory: $outputFileDir');
-		FileSystem.createDirectory(outputFileDir);
+		// ensure files are actually files
+		if (!FileSystem.exists(classesInfoPath) || FileSystem.isDirectory(classesInfoPath)) {
+			Log.error('Classes info file is not a file: $classesInfoPath');
+			return -1;
+		}
 
-		if (!FileSystem.exists(hxFilePath)) {
+		if (!FileSystem.exists(hxFilePath) || FileSystem.isDirectory(hxFilePath)) {
 			Log.error('Class file not found: $hxFilePath');
 			return -1;
 		}
 
-		if (!FileSystem.exists(classesInfoPath)) {
-			Log.error('Class info file not found: $classesInfoPath');
-			return -1;
+		if (FileSystem.exists(outputFilePath)) {
+			FileSystem.deleteFile(outputFilePath);
+		}
+
+		if (!FileSystem.exists(outputFileDir)) {
+			Log.debug('Creating output directory: $outputFileDir');
+			FileSystem.createDirectory(outputFileDir);
 		}
 
 		var cmd = findHaxeExecutable();
@@ -404,9 +419,6 @@ class ScriptCompiler {
 		var args = ["-cp", sourceDir, "-lib", "hxcore", "-D", 'dll_import=$classesInfoPath'];
 
 		try {
-			var tempDirBase = "";
-			
-
 			// create a temporary directory with a subdirectory of the source directory
 			var tempDir = Path.join([rootDir, tempDirBase, generatedScriptNamespace]);
 			if (!FileSystem.exists(tempDir)) {
@@ -425,7 +437,7 @@ class ScriptCompiler {
 				Log.debug('Creating temporary directory structure: $tempFileDir');
 				FileSystem.createDirectory(tempFileDir);
 			}
-						
+
 			if (FileSystem.exists(tempFilePath)) {
 				FileSystem.deleteFile(tempFilePath);
 			}
@@ -438,8 +450,9 @@ class ScriptCompiler {
 				return -1;
 			}
 
+			// add the temporary directory to the class path
 			args.push("-cp");
-			args.push(tempDirBase);
+			args.push(Path.join([rootDir, tempDirBase]));
 
 			// add the generated script namespace to the class name
 			className = generatedScriptNamespace + "." + className;
@@ -480,6 +493,38 @@ class ScriptCompiler {
 		} catch (e) {
 			Log.error('Haxe returned an error while compiling: $className:\n${e.message}');
 			return -1;
+		}
+
+		// now that we successfully compiled the script, let's do some small changes to the generated script if it was .cppia
+		if (target == "cppia") {
+			// find the name of the source file in the script and change it to the original script name
+			var stringToReplace = Path.join(['./', tempDirBase, classNameAsPath + ".hx"]);
+			var stringToReplaceWith = Path.join([sourceDir, classNameAsPath + ".hx"]);
+			Log.debug('Replacing string in file: $outputFilePath');
+			Log.debug('String to replace: $stringToReplace');
+			Log.debug('String to replace with: $stringToReplaceWith');
+			var fileIn = File.read(outputFilePath, true);
+			if (fileIn == null) {
+				Log.error('Failed to open file for reading: $outputFilePath');
+				return -1;
+			}
+			var fileInBytes = fileIn.readAll();
+			fileIn.close();
+			if (fileInBytes.length == 0) {
+				Log.error('File is empty: $outputFilePath');
+				return -1;
+			}
+			// replace the path to the modified source file with the path to the original source file
+			/*fileContent = StringTools.replace(fileContent, stringToReplace, stringToReplaceWith);
+				var fileOut = File.write(outputFilePath, false);
+				if (fileOut == null) {
+					Log.error('Failed to open file for writing: $outputFilePath');
+					return -1;
+				}
+				fileOut.writeString(fileContent);
+				fileOut.close();
+				Log.debug('Replaced string in file: $outputFilePath');
+			 */
 		}
 		return 0;
 	}
@@ -621,6 +666,39 @@ class ScriptCompiler {
 		return result;
 	}
 
+	macro static public function compileScriptFromFilename(filename:String, scriptsDir:String = 'scripts', outputDir:String = 'gen',
+			classesInfoPath:String = '.', target:String = "cppia"):Void {
+		// Parse filename into package structure
+		// e.g., "ui/Button.hx" -> package "ui", className "Button"
+		// e.g., "game/player/Player.hx" -> package "game.player", className "Player"
+		// e.g., "Test.hx" -> package "", className "Test"
+
+		var pathParts = filename.split("/");
+		var fileName = pathParts[pathParts.length - 1];
+		var packagePath = pathParts.slice(0, pathParts.length - 1);
+
+		// Remove .hx extension
+		if (StringTools.endsWith(fileName, ".hx")) {
+			fileName = fileName.substring(0, fileName.length - 3);
+		}
+
+		// Create package name from path
+		var packageName = packagePath.join(".");
+		var className = packageName.length > 0 ? packageName + "." + fileName : fileName;
+
+		Log.info('Compiling script from filename: $filename');
+		Log.info('Package: $packageName, Class: $className');
+
+		// Compile the script
+		var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, target, [], className);
+
+		if (result != 0) {
+			Log.error("Failed to compile script from filename: " + filename);
+		} else {
+			Log.info("Successfully compiled script from filename: " + filename);
+		}
+	}
+
 	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = '.',
 			extension:String = "js"):Void {
 		var files = getFilesRecursive(scriptsDir);
@@ -679,7 +757,19 @@ class ScriptCompiler {
 			currentArg = StringTools.trim(currentArg);
 
 			if ((currentArg == "-h") || (currentArg == "--help")) {
-				Log.info("Usage: haxe --run hxcore.macros.ScriptCompiler [--rootDir | -root] <rootDir> [--sourceDir | -src] <sourceDir> [--outputDir | -out] <outputDir> [--classesInfo | -ci ] <classesInfoFile> [--target | -t] <target> [--class | -c] <className>");
+				Log.info("Usage: haxe --run hxcore.scripting.ScriptCompiler [options]");
+				Log.info("Options:");
+				Log.info("  --rootDir | -root <dir>     Root directory");
+				Log.info("  --sourceDir | -src <dir>    Source directory");
+				Log.info("  --outputDir | -out <dir>    Output directory");
+				Log.info("  --classesInfo | -ci <file>  Classes info file");
+				Log.info("  --target | -t <target>      Target (cppia, js, etc.)");
+				Log.info("  --class | -c <className>     Class name to compile");
+				Log.info("  --file | -f <filename>      Filename to compile (parses into package.class)");
+				Log.info("");
+				Log.info("Examples:");
+				Log.info("  haxe --run hxcore.scripting.ScriptCompiler --file ui/Button.hx");
+				Log.info("  haxe --run hxcore.scripting.ScriptCompiler --class Test");
 				return;
 			} else if ((currentArg == "-src") || currentArg == "--sourcedir") {
 				if (args.length < i + 2) {
@@ -694,6 +784,31 @@ class ScriptCompiler {
 					return;
 				}
 				classNames.push(args[i + 1]);
+				args.splice(i, 2);
+			} else if ((currentArg == "--file") || (currentArg == "-f") || (currentArg == "--filename")) {
+				if (args.length < i + 2) {
+					Log.error('Error: ${args[i]} requires a filename argument');
+					return;
+				}
+				var filename = args[i + 1];
+				// Parse filename into package structure
+				var pathParts = filename.split("/");
+				var fileName = pathParts[pathParts.length - 1];
+				var packagePath = pathParts.slice(0, pathParts.length - 1);
+
+				// Remove .hx extension
+				if (StringTools.endsWith(fileName, ".hx")) {
+					fileName = fileName.substring(0, fileName.length - 3);
+				}
+
+				// Create package name from path
+				var packageName = packagePath.join(".");
+				var className = packageName.length > 0 ? packageName + "." + fileName : fileName;
+
+				Log.info('Compiling script from filename: $filename');
+				Log.info('Package: $packageName, Class: $className');
+
+				classNames.push(className);
 				args.splice(i, 2);
 			} else if ((currentArg == "-out") || (currentArg == "--outputdir")) {
 				if (args.length < i + 2) {

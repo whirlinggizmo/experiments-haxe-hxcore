@@ -1,0 +1,28 @@
+--cwd examples/scripttest
+
+-lib hxcore
+-cp src
+
+# debugging
+--debug
+-lib hxcpp-debug-server
+--dce no
+
+
+# enable cppia
+-D scriptable 
+
+--cpp out
+-D HXCPP_M64
+-D HXCPP_CATCH_SEGV
+-D hxcpp_smart_strings
+
+
+--define HAXE_OUTPUT_FILE=ScriptTest
+--main ScriptTest
+
+# include the compiled in scripts 
+scripts.Test
+
+
+--cmd pkill -9 ScriptTest || true

@@ -31,55 +31,11 @@ class ScriptLoader {
 	private static var cppiaFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
 	#end
 
-	// ============================================================================
-	// UTILITY FUNCTIONS
-	// ============================================================================
-
-	private static function normalizePath(path:String):String {
-		if (!Path.isAbsolute(path)) {
-			path = Path.join([Path.directory(Sys.programPath()), path]);
-		}
-		return Path.normalize(path);
-	}
-
-	private static function ensureAbsolutePath(path:String):String {
-		if (!Path.isAbsolute(path)) {
-			return Path.join([Path.directory(Sys.programPath()), path]);
-		}
-		return path;
-	}
-
-	private static function validatePath(path:String, isDirectory:Bool = true):Bool {
-		if (path == null || path.length == 0) {
-			return false;
-		}
-		if (isDirectory) {
-			return FileSystem.exists(path) && FileSystem.isDirectory(path);
-		} else {
-			return FileSystem.exists(path) && !FileSystem.isDirectory(path);
-		}
-	}
-
-	private static function buildFileFilter(className:String, extension:String):String {
-		var filter = className;
-		
-		// Convert package dots to path separators
-		filter = StringTools.replace(filter, ".", "/");
-		
-		// Escape special regex characters
-		filter = StringTools.replace(filter, "/", "\\/");
-		filter = StringTools.replace(filter, "*", ".*");
-		filter = StringTools.replace(filter, "?", "\\?");
-		
-		// Add extension
-		filter = filter + "\\." + extension;
-		
-		// Make it an exact match
-		return "^" + filter + "$";
-	}
-
 	private static function setScriptDirectory(scriptDirectory:String):Void {
-		ScriptLoader.scriptDirectory = normalizePath(scriptDirectory);
+		if (!Path.isAbsolute(scriptDirectory)) {
+			scriptDirectory = Path.join([Path.directory(Sys.programPath()), scriptDirectory]);
+		}
+		ScriptLoader.scriptDirectory = scriptDirectory;
 	}
 
 	public static function enableExternalScripts(scriptDirectory:String):Void {
@@ -87,7 +43,10 @@ class ScriptLoader {
 		Log.warn("External script loading not available on this platform (requires sys, scriptable)");
 		return;
 		#end
-		ScriptLoader.scriptDirectory = normalizePath(scriptDirectory);
+		if (!Path.isAbsolute(scriptDirectory)) {
+			scriptDirectory = Path.join([Path.directory(Sys.programPath()), scriptDirectory]);
+		}
+		ScriptLoader.scriptDirectory = scriptDirectory;
 		externalScriptsEnabled = true;
 	}
 
@@ -101,7 +60,10 @@ class ScriptLoader {
 
 	public static function enableHotCompile(scriptSourceDirectory:String):Void {
 		#if sys
-		ScriptLoader.scriptSourceDirectory = normalizePath(scriptSourceDirectory);
+		if (!Path.isAbsolute(scriptSourceDirectory)) {
+			scriptSourceDirectory = Path.join([Path.directory(Sys.programPath()), scriptSourceDirectory]);
+		}
+		ScriptLoader.scriptSourceDirectory = scriptSourceDirectory;
 		hotCompileEnabled = true;
 		#else
 		Log.warn("Hot compile not available on this platform (requires sys)");
@@ -130,6 +92,19 @@ class ScriptLoader {
 		return classPath;
 	}
 
+	/*
+		private static function getProgramBasePath():String {
+			// Get the full path to the program
+			var programBasePath = FileSystem.fullPath(Sys.programPath());
+
+			// If the program path points to a file (e.g., executable), get the directory by manipulating the string
+			if (!FileSystem.isDirectory(programBasePath)) {
+				programBasePath = programBasePath.split("/").slice(0, -1).join("/");
+			}
+
+			return programBasePath;
+		}
+	 */
 	/**
 	 * createHotReloadWatcher()
 	 * Sets up a file watcher for the script file (.cppia) and calls the onChanged callback when the file changes
@@ -137,33 +112,31 @@ class ScriptLoader {
 	 * @param scriptName : The script (class) to watch.  e.g., "Test" or "mypackage.Test"
 	 * @param onChanged : The callback to call when the file changes. String->Void
 	 */
-	private static function validateWatcherSetup(scriptDirectory:String, scriptName:String, requiresExternal:Bool = false):Bool {
-		if (requiresExternal && !externalScriptsEnabled) {
-			Log.warn("External scripts not enabled");
-			return false;
-		}
-		if (scriptName == null || scriptName.length == 0) {
-			Log.warn("No script name specified");
-			return false;
-		}
-		if (scriptDirectory == null || scriptDirectory.length == 0) {
-			Log.warn("No script directory specified");
-			return false;
-		}
-		return true;
-	}
-
 	private static function createHotReloadWatcher(scriptDirectory:String, scriptName:String, onChanged:String->Void) {
+		if (!externalScriptsEnabled) {
+			Log.warn("External scripts not enabled");
+			return;
+		}
 		if (!hotReloadEnabled) {
 			Log.warn("Hot reload not enabled");
 			return;
 		}
 		#if (sys && scriptable)
-		if (!validateWatcherSetup(scriptDirectory, scriptName, true)) {
+		if (scriptName.length == 0) {
+			Log.warn("No script name specified");
 			return;
 		}
 
-		scriptDirectory = normalizePath(scriptDirectory);
+		if (scriptDirectory.length == 0) {
+			Log.warn("No script directory specified");
+			return;
+		}
+
+		if (!Path.isAbsolute(scriptDirectory)) {
+			scriptDirectory = Path.join([Path.directory(Sys.programPath()), scriptDirectory]);
+		}
+
+		scriptDirectory = Path.normalize(scriptDirectory);
 
 		Log.info("Path for compiled script files(.cppia) files is: " + scriptDirectory);
 
@@ -175,18 +148,46 @@ class ScriptLoader {
 
 		// break the scriptName into the package name and class name
 		var className = getClassName(scriptDirectory, scriptName);
-		var scriptCppiaFileFilter = buildFileFilter(className, "cppia");
+
+		var scriptCppiaFileFilter = className;
+
+		// adjust the regexp to match the script name
+		scriptCppiaFileFilter = StringTools.replace(scriptCppiaFileFilter, ".", "/");
+		scriptCppiaFileFilter = StringTools.replace(scriptCppiaFileFilter, "/", "\\/");
+		scriptCppiaFileFilter = StringTools.replace(scriptCppiaFileFilter, "*", ".*");
+		scriptCppiaFileFilter = StringTools.replace(scriptCppiaFileFilter, "?", "\\?");
+
+		// add the extension after transforming '.' to '/'
+		scriptCppiaFileFilter = scriptCppiaFileFilter + "\\.cppia";
+
+		// make it an exact match
+		scriptCppiaFileFilter = "^" + scriptCppiaFileFilter + "$";
 
 		var scriptCppiaPath = getClassPath(scriptDirectory, scriptName);
+		// scriptCppiaPath = Path.join([scriptDirectory, scriptCppiaPath]); // programBasePath + "/../" + scriptDirectory;
+		// scriptCppiaPath = Path.normalize(scriptCppiaPath);
 
 		var cppiaFileWatcher = new FileWatcher(scriptCppiaPath, scriptCppiaFileFilter, (filename:String, event:FileEvent) -> {
+			// if (filename != scriptCppiaFile) {
+			//	Log.warn("Script file different path than expected!: " + filename + " != " + scriptCppiaFile);
+			//	return;
+			// }
+
+			// TODO: Handle the case where the file is deleted
 			if (event == FileEvent.Removed) {
 				Log.warn("Script file deleted " + filename);
-			} else if (event == FileEvent.Added) {
-				Log.info("Script file added " + filename);
-			} else {
-				Log.info("Script file changed: " + filename);
+				onChanged(filename);
+				return;
 			}
+
+			if (event == FileEvent.Added) {
+				// Log.warn("Script file added, ignoring: " + filename);
+				onChanged(filename);
+				return;
+			}
+
+			Log.info("Script file changed: " + filename);
+
 			onChanged(filename);
 		});
 
@@ -210,11 +211,24 @@ class ScriptLoader {
 		}
 
 		#if (sys && scriptable)
-		if (!validateWatcherSetup(scriptDirectory, scriptName)) {
+		//
+		// Create a FileWatcher to monitor the script file (the .hx file)
+		//
+
+		if (scriptName.length == 0) {
+			Log.warn("No script name specified");
 			return;
 		}
 
-		scriptDirectory = normalizePath(scriptDirectory);
+		if (scriptDirectory.length == 0) {
+			Log.warn("No script directory specified");
+			return;
+		}
+
+		if (!Path.isAbsolute(scriptDirectory)) {
+			scriptDirectory = Path.join([Path.directory(Sys.programPath()), scriptDirectory]);
+		}
+		scriptDirectory = Path.normalize(scriptDirectory);
 		Log.info("Path for script source files(.hx) files is: " + scriptSourceDirectory);
 
 		classesInfoPath = Path.join([scriptDirectory, "export_classes.info"]);
@@ -227,10 +241,25 @@ class ScriptLoader {
 
 		// break the scriptName into the package name and class name
 		var className = getClassName(scriptDirectory, scriptName);
-		var scriptSourceFileFilter = buildFileFilter(className, "hx");
+		// var scriptSourceFile = className + ".hx";
+
+		var scriptSourceFileFilter = className;
+
+		// adjust the regexp to match the script name
+		scriptSourceFileFilter = StringTools.replace(scriptSourceFileFilter, ".", "/");
+		scriptSourceFileFilter = StringTools.replace(scriptSourceFileFilter, "/", "\\/");
+		scriptSourceFileFilter = StringTools.replace(scriptSourceFileFilter, "*", ".*");
+		scriptSourceFileFilter = StringTools.replace(scriptSourceFileFilter, "?", "\\?");
+
+		// add the extension after transforming '.' to '/'
+		scriptSourceFileFilter = scriptSourceFileFilter + "\\.hx";
+
+		// make it an exact match
+		scriptSourceFileFilter = "^" + scriptSourceFileFilter + "$";
+		// Log.debug("scriptSourceFileFilter: " + scriptSourceFileFilter);
 
 		var haxeSourceFileWatcher = new FileWatcher(scriptSourceDirectory, scriptSourceFileFilter, (filename:String, event:FileEvent) -> {
-			Log.debug("Script source file changed: " + filename);
+			// Log.debug("Script source file changed: " + filename);
 			scriptChangedCallback(filename);
 		});
 
@@ -386,10 +415,6 @@ class ScriptLoader {
 
 				var haxeArgs = ["-dce", "full", "-cp", "lib"];
 
-				var scriptSourceAbsolutePath = if (!Path.isAbsolute(scriptSourceDirectory))Path.join([Sys.getCwd(), scriptSourceDirectory]) else scriptSourceDirectory;
-				var classesInfoAbsolutePath = if (!Path.isAbsolute(classesInfoPath)) Path.join([Sys.getCwd(), classesInfoPath]) else classesInfoPath;
-				classesInfoPath =if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(scriptSourceDirectory, classesInfoPath) else classesInfoPath;
-				
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
 				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
 

@@ -7,6 +7,27 @@
         "flecs_wrapper_event.h": "c",
         "flecs_wrapper_component.h": "c"
     },
+    "haxe.configurations": [
+        [
+          "examples/scripttest/vscode.hxml"
+        ],
+      
+    ],
+    "runOnSave.statusMessageTimeout": 3000,
+    "runOnSave.commands": [
+        {
+            "command": "haxe",
+            "args": [
+                //"--cwd", "examples/scripttest",
+                "build.scripttest.hxml"
+            ],
+            "clearOutput": true,
+            "globMatch": "examples/scripttest/src/**/*.hx",
+            "runningStatusMessage": "scripttest:building...",
+            "finishedStatusMessage": "scripttest:complete",
+            "runIn": "terminal"
+        },
+    ],
     "clangd.fallbackFlags": [
     "-I${workspaceFolder}/src/hxcore/flecs/flecs_wrapper/include",
     "-I/my/include"
