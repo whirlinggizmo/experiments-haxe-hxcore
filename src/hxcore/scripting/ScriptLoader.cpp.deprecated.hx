@@ -228,7 +228,7 @@ class ScriptLoader {
 		if (!Path.isAbsolute(scriptDirectory)) {
 			scriptDirectory = Path.join([Path.directory(Sys.programPath()), scriptDirectory]);
 		}
-		scriptDirectory = Path.normalize(scriptDirectory);
+		scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 		Log.info("Path for script source files(.hx) files is: " + scriptSourceDirectory);
 
 		classesInfoPath = Path.join([scriptDirectory, "export_classes.info"]);

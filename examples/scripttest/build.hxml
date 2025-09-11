@@ -46,7 +46,7 @@ scripts.Test
 # filter the generated export_classes.info and write it to the script source directory
 --macro hxcore.macros.ExportClassesInfo.filterToFile('export_classes.info', 'scripts/export_classes.filtered.info', ['^class scripts\\..*$'])
 # move the original, unfiltered version to the script source directory for reference
---cmd mv export_classes.info scripts/export_classes.info
+#--cmd mv export_classes.info scripts/export_classes.info
 --next
 
 

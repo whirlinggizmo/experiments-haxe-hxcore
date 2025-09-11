@@ -219,6 +219,7 @@ class cpp.vm.ThreadInfo
 class cpp.vm.StackFrame
 class cpp.vm.Parameter
 class cpp.cppia.HostClasses
+class cpp.cppia.Host
 class cpp.Lib
 class cpp.Int64Map
 interface haxe.IMap
@@ -293,6 +294,7 @@ file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Mutex.hx /h
 file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Semaphore.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Semaphore.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Thread.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Thread.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Tls.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/_std/sys/thread/Tls.hx
+file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/cppia/Host.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/cppia/Host.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/vm/Debugger.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/vm/Debugger.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/vm/ExecutionTrace.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/vm/ExecutionTrace.hx
 file /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/vm/Gc.hx /home/rknopf/toolchains/haxe/haxe-4.3.7/std/cpp/vm/Gc.hx

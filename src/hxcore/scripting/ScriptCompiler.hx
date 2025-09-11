@@ -11,9 +11,8 @@ import sys.io.Process;
 
 // import hxcore.scripting.ScriptLoader;
 // A script generator that generates "script" files from .hx files
-// hxml can't do variables, so we use this
-// Usage example: Compile 'Test.hx' in the 'scripts' directory to 'Test.cppia' in the 'dist/scripts' directory:
-// haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName scripts.Test --target cppia --outputDir dist/scripts
+// Usage example: Compile 'scripts/Test.hx' in the 'scripts' directory to 'scripts/Test.cppia' in the 'dist/scripts' directory:
+// haxe --run hxcore.scripting.ScriptCompiler --scriptDir scripts --scriptName scripts.Test --target cppia --outputDir dist
 @:keep
 class ScriptCompiler {
 	private static var generatedScriptNamespace:String = "gen";
@@ -26,78 +25,6 @@ class ScriptCompiler {
 		generatedScriptNamespace = namespace;
 		Log.info('Generated script namespace set to: $namespace');
 	}
-
-/*
-	private static function addParentPackageToModule(modulePath:String, parentPackageName:String):Bool {
-		if (!FileSystem.exists(modulePath)) {
-			Log.error('Module file not found: $modulePath');
-			return false;
-		}
-		// read the module file into memory
-		var file = File.read(modulePath, false);
-		var fileBytes = file.readAll();
-		file.close();
-
-		if (fileBytes.length == 0) {
-			Log.error('Module file is empty: $modulePath');
-			return false;
-		}
-
-		// convert the file bytes to a string
-		var fileContent = fileBytes.toString();
-		if (fileContent == null) {
-			Log.error('Failed to convert module file to string: $modulePath');
-			return false;
-		}
-
-		// add the parent package name to the module file.  if it doesn't have a package declaration, add it
-		// find the line with the package declaration
-		// we'll have to use a regex to find the line with the package declaration
-		// we're looking for "package" as the start of the line (ignoring preceeding whitespace)
-		// we need to replace the line with the package declaration:
-		// package; -> package gen;
-		// package ; -> package gen;
-		// package mine; -> package gen.mine;
-		// package mine   ; -> package gen.mine;
-		// or no package declaration at all -> package gen;
-
-		// Regex to match package declaration at start of line (ignoring whitespace)
-		var packageRegex = new EReg("^\\s*package\\s*([^;\\s]*)\\s*;", "m");
-
-		if (packageRegex.match(fileContent)) {
-			// Found existing package declaration
-			var existingPackage = packageRegex.matched(1);
-			var newPackageDeclaration:String;
-
-			if (existingPackage == null || existingPackage.length == 0) {
-				// package; -> package gen;
-				newPackageDeclaration = 'package $parentPackageName;';
-			} else {
-				// package mine; -> package gen.mine;
-				newPackageDeclaration = 'package $parentPackageName.$existingPackage;';
-			}
-
-			// Replace the existing package declaration
-			fileContent = packageRegex.replace(fileContent, newPackageDeclaration);
-			Log.debug('Updated package declaration: $newPackageDeclaration');
-		} else {
-			// No package declaration found, add one at the beginning
-			var newPackageDeclaration = 'package $parentPackageName;\n';
-			fileContent = newPackageDeclaration + fileContent;
-			Log.debug('Added new package declaration: $newPackageDeclaration');
-		}
-
-		// write the module file back to disk
-		var file = File.write(modulePath, false);
-		if (file == null) {
-			Log.error('Failed to write module file: $modulePath');
-			return false;
-		}
-		file.writeString(fileContent);
-		file.close();
-		return true;
-	}
-*/
 	/**
 	 * Compiles a script using macro-based namespace injection instead of temporary files.
 	 * It uses :native metadata to inject namespaces.
@@ -119,10 +46,10 @@ class ScriptCompiler {
 		}
 
 		rootDir = rootDir ?? Sys.getCwd();
-		rootDir = PathUtils.ensureAbsolute(rootDir, rootDir);
-		sourceDir = PathUtils.ensureAbsolute(rootDir, sourceDir);
-		outputDir = PathUtils.ensureAbsolute(rootDir, outputDir);
-		classesInfoPath = PathUtils.ensureAbsolute(rootDir, classesInfoPath);
+		rootDir = PathUtils.normalizePath(rootDir);
+		sourceDir = PathUtils.makeAbsolutePath(rootDir, sourceDir);
+		outputDir = PathUtils.makeAbsolutePath(rootDir, outputDir);
+		classesInfoPath = PathUtils.makeAbsolutePath(rootDir, classesInfoPath);
 
 		rootDir = rootDir.length > 0 ? Path.addTrailingSlash(rootDir) : rootDir;
 		sourceDir = sourceDir.length > 0 ? Path.addTrailingSlash(sourceDir) : sourceDir;
@@ -174,7 +101,7 @@ class ScriptCompiler {
 			FileSystem.createDirectory(outputFileDir);
 		}
 
-		var haxeExecutable = PathUtils.findHaxeExecutable();
+		var haxeExecutable = PathUtils.findHaxeExecutablePath();
 		if (haxeExecutable == null) {
 			Log.error('Unable to find haxe executable');
 			return -1;

@@ -1,14 +1,13 @@
 package hxcore.util;
 
 import haxe.io.Path;
-
 #if sys
 import sys.io.Process;
+import sys.FileSystem;
 #end
 
-
 class PathUtils {
-    public static function globToRegex(pattern:String):EReg {
+	public static function globToRegex(pattern:String):EReg {
 		// Convert glob pattern to regular expression
 		var regexPattern = StringTools.replace(pattern, ".", "\\."); // Escape dots
 		regexPattern = StringTools.replace(regexPattern, "*", ".*"); // Replace '*' with '.*' to match any characters
@@ -34,8 +33,7 @@ class PathUtils {
 	 * 
 	 * @credit https://gist.github.com/haxiomic/98c61a09f6028fd72dccc0053385af76
 	 */
-	public static function relativePath(relativeToAbsolute: String, pathAbsolute: String) {
-
+	public static function relativePath(relativeToAbsolute:String, pathAbsolute:String) {
 		if (!Path.isAbsolute(relativeToAbsolute)) {
 			// Log.error('relativeToAbsolute is not absolute: ' + relativeToAbsolute);
 			return pathAbsolute;
@@ -49,10 +47,10 @@ class PathUtils {
 		// make both absolute
 		pathAbsolute = Path.removeTrailingSlashes(pathAbsolute);
 		relativeToAbsolute = Path.removeTrailingSlashes(relativeToAbsolute);
-	
+
 		var aPath = pathAbsolute.split('/');
 		var aRelativeTo = relativeToAbsolute.split('/');
-	
+
 		// find shared part of path
 		var matchesUpToIndex = 0;
 		for (i in 0...aRelativeTo.length) {
@@ -62,10 +60,8 @@ class PathUtils {
 				break;
 			}
 		}
-	
-		var result =  [for (_ in 0...(aRelativeTo.length - 1) - matchesUpToIndex) '..']
-			.concat(aPath.slice(matchesUpToIndex + 1))
-			.join('/');
+
+		var result = [for (_ in 0...(aRelativeTo.length - 1) - matchesUpToIndex) '..'].concat(aPath.slice(matchesUpToIndex + 1)).join('/');
 
 		if (!StringTools.startsWith(result, "./")) {
 			result = "./" + result;
@@ -77,29 +73,30 @@ class PathUtils {
 	public static function getDirectoryTail(path:String):String {
 		var normalizedPath = Path.normalize(path); // clean it and fix windows slashes
 		var dir = Path.directory(path); // remove filename if any
-		var parts = dir.split("/");     // split into path segments
+		var parts = dir.split("/"); // split into path segments
 		return parts[parts.length - 1];
 	}
 
 	public static function getDirectoryHead(path:String):String {
 		var normalizedPath = Path.normalize(path); // clean it and fix windows slashes
 		var dir = Path.directory(path); // remove filename if any
-		var parts = dir.split("/");     // split into path segments
+		var parts = dir.split("/"); // split into path segments
 		return parts[0];
 	}
-	
+
 	public static function getDirectoryParent(path:String):String {
-		var dir = Path.directory(path);         // strips off filename if present
-		var normalized = Path.normalize(dir);   // ensures consistent "/"
+		var dir = Path.directory(path); // strips off filename if present
+		var normalized = Path.normalize(dir); // ensures consistent "/"
 		var parts = normalized.split("/");
-	
+
 		if (parts.length <= 1)
 			return ""; // root or already at top level
-	
+
 		return parts.slice(0, parts.length - 1).join("/");
 	}
 
 	public static function deleteDirectoryRecursively(path:String):Void {
+		#if sys
 		if (sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path)) {
 			var entries = sys.FileSystem.readDirectory(path);
 			for (entry in entries) {
@@ -111,14 +108,47 @@ class PathUtils {
 				}
 			}
 		}
+		#else
+		Log.error("sys is unavailable, unable to delete directory recursively");
+		#end
 	}
 
-	public static function ensureAbsolute(base:String, path:String):String {
-		return Path.isAbsolute(path) ? Path.normalize(path) : Path.normalize(Path.join([base, path]));
+	public static function normalizePath(path:String):String {
+		return Path.normalize(path);
 	}
 
+	public static function makeAbsolutePath(base:String, path:String):String {
+		if (path == null || path.length == 0) {
+			Log.error('Path is not set: $path');
+			return base;
+		}
+		if (base == null || base.length == 0 || !Path.isAbsolute(base)) {
+			Log.error('Base path is not absolute: $base');
+			return path;
+		}
 
-	public static function findHaxeExecutable():Null<String> {
+		if (Path.isAbsolute(path)) {
+			Log.warn('Path is already absolute: $path');
+			return path;
+		}
+		
+		return normalizePath(Path.join([base, path]));
+	}
+
+	private static function validateFilePath(path:String):Bool {
+		if (path == null || path.length == 0) {
+			return false;
+		}
+			return FileSystem.exists(path) && !FileSystem.isDirectory(path);
+	}
+	private static function validateDirectoryPath(path:String):Bool {
+		if (path == null || path.length == 0) {
+			return false;
+		}
+		return FileSystem.exists(path) && FileSystem.isDirectory(path);
+	}
+
+	public static function findHaxeExecutablePath():Null<String> {
 		#if sys
 		final cmd = 'haxe';
 		var lookupCmd = switch (Sys.systemName()) {
@@ -317,16 +347,16 @@ class PathUtils {
 		return null;
 	}
 
-
 	/* example ignored files and directories:
-	var ignoredFiles = ["import.hx"];
-	var ignoredDirectories = ["unused", "externs"];
-	*/
+		var ignoredFiles = ["import.hx"];
+		var ignoredDirectories = ["unused", "externs"];
+	 */
 	static public function getFilesRecursive(directory:String, ignoredFiles:Array<String> = null, ignoredDirectories:Array<String> = null):Array<String> {
 		var files:Array<String> = [];
 
 		var ignoredFilesRegex = ignoredFiles != null && ignoredFiles.length > 0 ? new EReg(ignoredFiles.join("|"), "i") : null;
-		var ignoredDirectoriesRegex = ignoredDirectories != null && ignoredDirectories.length > 0 ? new EReg(ignoredDirectories.join("|"), "i") : null;
+		var ignoredDirectoriesRegex = ignoredDirectories != null
+			&& ignoredDirectories.length > 0 ? new EReg(ignoredDirectories.join("|"), "i") : null;
 
 		// helper function to check if a file or directory is ignored
 		function isIgnored(file:String, ignoreRegexes:Array<EReg>):Bool {

@@ -34,28 +34,7 @@ class ScriptLoader {
 	// UTILITY FUNCTIONS
 	// ============================================================================
 
-	private static function normalizePath(path:String):String {
-		path = ensureAbsolutePath(path);
-		return Path.normalize(path);
-	}
 
-	private static function ensureAbsolutePath(path:String):String {
-		if (!Path.isAbsolute(path)) {
-			return Path.join([Path.directory(Sys.programPath()), path]);
-		}
-		return path;
-	}
-
-	private static function validatePath(path:String, isDirectory:Bool = true):Bool {
-		if (path == null || path.length == 0) {
-			return false;
-		}
-		if (isDirectory) {
-			return FileSystem.exists(path) && FileSystem.isDirectory(path);
-		} else {
-			return FileSystem.exists(path) && !FileSystem.isDirectory(path);
-		}
-	}
 
 	private static function buildFileFilter(className:String, extension:String):String {
 		var filter = className;
@@ -76,7 +55,7 @@ class ScriptLoader {
 	}
 
 	private static function setScriptDirectory(scriptDirectory:String):Void {
-		ScriptLoader.scriptDirectory = normalizePath(scriptDirectory);
+		ScriptLoader.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 	}
 
 	public static function enableExternalScripts(scriptDirectory:String):Void {
@@ -84,9 +63,23 @@ class ScriptLoader {
 		Log.warn("External script loading not available on this platform (requires sys, scriptable)");
 		return;
 		#end
-		ScriptLoader.scriptDirectory = normalizePath(scriptDirectory);
+		ScriptLoader.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 		externalScriptsEnabled = true;
+
+		#if !emscripten
+		enableJITCompilation(true);
+		#end
 	}
+
+	public static function enableJITCompilation(enable:Bool):Void {
+		#if (!cpp || !scriptable || emscripten)
+		Log.warn("JIT compilation not available on this platform (requires cpp + scriptable, not emscripten)");
+		return;
+		#else
+		cpp.cppia.Host.enableJit(enable);
+		#end
+	}
+
 
 	public static function enableHotReload():Void {
 		#if (sys && scriptable)
@@ -98,7 +91,7 @@ class ScriptLoader {
 
 	public static function enableHotCompile(scriptSourceDirectory:String):Void {
 		#if sys
-		ScriptLoader.scriptSourceDirectory = normalizePath(scriptSourceDirectory);
+		ScriptLoader.scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
 		hotCompileEnabled = true;
 		#else
 		Log.warn("Hot compile not available on this platform (requires sys)");
@@ -160,7 +153,7 @@ class ScriptLoader {
 			return;
 		}
 
-		scriptDirectory = normalizePath(scriptDirectory);
+		scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 
 		Log.info("Path for compiled script files(.cppia) files is: " + scriptDirectory);
 
@@ -211,7 +204,7 @@ class ScriptLoader {
 			return;
 		}
 
-		scriptDirectory = normalizePath(scriptDirectory);
+		scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 		Log.info("Path for script source files(.hx) files is: " + scriptSourceDirectory);
 
 		classesInfoPath = Path.join([scriptDirectory, "export_classes.filtered.info"]);
@@ -242,9 +235,9 @@ class ScriptLoader {
 	 * Ensures class is derived from Script, instantiates it, and sets metadata.
 	 */
 	private static function createScriptInstance(scriptDirectory:String, className:String):ScriptInfo {
-		scriptDirectory = Path.addTrailingSlash(Path.normalize(scriptDirectory));
+		scriptDirectory = Path.addTrailingSlash(PathUtils.normalizePath(scriptDirectory));
 		var classNameAsPath = StringTools.replace(className, ".", "/");
-		var sourceFilePath = Path.normalize(Path.join([scriptDirectory, classNameAsPath + ".cppia"]));
+		var sourceFilePath = PathUtils.normalizePath(Path.join([scriptDirectory, classNameAsPath + ".cppia"]));
 		var resolvedClass:Class<Dynamic> = null;
 		final scriptInfo:ScriptInfo = {className: className, sourcePath: sourceFilePath};
 		#if scriptable
@@ -381,14 +374,14 @@ class ScriptLoader {
 				}
 
 				// ensure the scriptSourceDirectory appears as a directory by appending a trailing slash
-				scriptSourceDirectory = Path.addTrailingSlash(scriptSourceDirectory);
+				scriptSourceDirectory = Path.addTrailingSlash(PathUtils.normalizePath(scriptSourceDirectory));
 
 				var haxeArgs = ["-lib", "hxcore"];//"-dce", "no"];
 
-				var scriptSourceAbsolutePath = if (!Path.isAbsolute(scriptSourceDirectory)) Path.join([Sys.getCwd(), scriptSourceDirectory]) else
+				var scriptSourceAbsolutePath = if (!Path.isAbsolute(scriptSourceDirectory)) Path.join([Sys.getCwd(), PathUtils.normalizePath(scriptSourceDirectory)]) else
 					scriptSourceDirectory;
-				var classesInfoAbsolutePath = if (!Path.isAbsolute(classesInfoPath)) Path.join([Sys.getCwd(), classesInfoPath]) else classesInfoPath;
-				classesInfoPath = if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(scriptSourceDirectory, classesInfoPath) else classesInfoPath;
+				var classesInfoAbsolutePath = if (!Path.isAbsolute(classesInfoPath)) Path.join([Sys.getCwd(), PathUtils.normalizePath(classesInfoPath)]) else classesInfoPath;
+				classesInfoPath = if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(PathUtils.normalizePath(scriptSourceDirectory), PathUtils.normalizePath(classesInfoPath)) else classesInfoPath;
 
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
 				// Use the new macro-based approach instead of temporary files
