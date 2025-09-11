@@ -214,7 +214,7 @@ class ScriptLoader {
 		scriptDirectory = normalizePath(scriptDirectory);
 		Log.info("Path for script source files(.hx) files is: " + scriptSourceDirectory);
 
-		classesInfoPath = Path.join([scriptDirectory, "export_classes.info"]);
+		classesInfoPath = Path.join([scriptDirectory, "export_classes.filtered.info"]);
 
 		if (haxeSourceFileWatchers.exists(scriptName)) {
 			haxeSourceFileWatchers[scriptName].stop();

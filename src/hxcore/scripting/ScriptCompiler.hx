@@ -242,6 +242,11 @@ class ScriptCompiler {
 			args.push("cppia");
 		}		
 
+		// add a macro to force include the original class name
+		var includeMacroArgs = ' "${className}", true ';
+		args.push("--macro");
+		args.push('include(${includeMacroArgs})');
+
 		// add our macro to change the namespace to the generated namespace
 		var setNativeMacroArgs = ' "${className}", "${generatedScriptNamespace}.${className}" ';
 		args.push("--macro");
@@ -462,7 +467,7 @@ class ScriptCompiler {
 		var classNames = [];
 		var outputDirectory = "";
 		var target = "js";
-		var classesInfoPath = "export_classes.info";
+		var classesInfoPath = "export_classes.filtered.info";
 
 		var args = Sys.args();
 		args = trimArgs(args);

@@ -39,10 +39,15 @@
 # include the compiled in scripts 
 scripts.Test
 
-
-# move the generated export_classes.info to the script source directory
+--next
 --cmd mkdir -p scripts
+--next
+-lib hxcore
+# filter the generated export_classes.info and write it to the script source directory
+--macro hxcore.macros.ExportClassesInfo.filterToFile('export_classes.info', 'scripts/export_classes.filtered.info', ['^class scripts\\..*$'])
+# move the original, unfiltered version to the script source directory for reference
 --cmd mv export_classes.info scripts/export_classes.info
+--next
 
 
 # copy the executable to the dist directory

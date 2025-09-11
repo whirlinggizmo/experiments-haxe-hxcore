@@ -3,7 +3,7 @@
 --target cppia
 --sourceDir scripts
 --outputDir dist/scripts
---classesInfo export_classes.info
+--classesInfo export_classes.filtered.info
 
 # Usage examples:
 # haxe compile.filename.hxml --file ui/Button.hx
