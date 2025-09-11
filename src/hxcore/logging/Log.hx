@@ -1,6 +1,7 @@
 package hxcore.logging;
 
 import haxe.io.Path;
+import hxcore.util.PathUtils;
 #if js
 import js.Syntax;
 #end
@@ -14,6 +15,12 @@ enum abstract LogLevel(Int) from Int to Int {
 
 	static var longest:Int = 20;
 
+	#if sys
+	static private var workspaceRoot:String = Sys.getCwd();
+	#else
+	static private var workspaceRoot:String = "/";
+	#end
+
 	public inline function toString():String {
 		return switch (this) {
 			default: "DEBUG";
@@ -22,6 +29,11 @@ enum abstract LogLevel(Int) from Int to Int {
 			case Error: "ERROR";
 			case Fatal: "FATAL";
 		}
+	}
+
+	public static function setWorkspaceRoot(root:String):Void {
+		workspaceRoot = Path.normalize(root);
+		trace('workspaceRoot: $workspaceRoot');
 	}
 
 	public function format(s:String, color:Bool = true, ?pos:haxe.PosInfos, ?tag:String):String {
@@ -33,9 +45,7 @@ enum abstract LogLevel(Int) from Int to Int {
 		d = '';
 
 		var p = '';
-		if (pos != null && pos.fileName != null) {
-		
-		}
+		if (pos != null && pos.fileName != null) {}
 		// level from the enum
 		var l = toString();
 
@@ -50,12 +60,22 @@ enum abstract LogLevel(Int) from Int to Int {
 			var p = StringTools.lpad(pos.fileName, " ", longest) + ":" + StringTools.lpad(Std.string(pos.lineNumber), " ", 4) + ":";
 			// rjk changed the position layout so vscode will see it as a link
 			p = pos.fileName + ":" + pos.lineNumber;
-			if (!Path.isAbsolute(pos.fileName)) {
-				p = Path.join([Sys.getCwd(), p]);
-				trace('p: $p');
-				trace('Sys.getCwd(): ${Sys.getCwd()}');
-				trace('Sys.programPath(): ${Sys.programPath()}');
-				//p = "./" + p;
+			if (StringTools.startsWith(pos.fileName, "hxcore")) {
+				// special case (read: hack)
+				p = "./src/" + p;
+			} else {
+				if (!Path.isAbsolute(pos.fileName)) {
+					// get the relative path from the workspace root to the file
+					p = Path.join([Sys.getCwd(), p]);
+					//trace('p: $p');
+					//trace('workspaceRoot: $workspaceRoot');
+					//trace('cwd: ${Sys.getCwd()}');
+					//trace('PathUtils.relativePath(p, workspaceRoot): ${PathUtils.relativePath(p, workspaceRoot)}');
+					//trace('PathUtils.relativePath(workspaceRoot, p): ${PathUtils.relativePath(workspaceRoot, p)}');
+					p = PathUtils.relativePath(workspaceRoot, p);
+				} else {
+					p = Path.join([workspaceRoot, p]);
+				}
 			}
 			fmt = (tag != null ? tag : '[ $l ] ') + '[$p]' + ': $s';
 			if (pos.fileName.length > longest) {
@@ -110,6 +130,18 @@ class Log {
 			Syntax.code("
                 if (console?.log) console.log = Function.prototype.bind.call(console.log, console);
             ");
+			#end
+
+			// check for the HXECORE_WORKSPACE_FOLDER environment variable
+			#if sys
+			var workspaceRootEnv = Sys.environment().get('HXCORE_WORKSPACE_FOLDER');
+			if (workspaceRootEnv != null) {
+				trace('workspaceRootEnv: $workspaceRootEnv');
+				LogLevel.setWorkspaceRoot(workspaceRootEnv);
+			} else {
+				trace('no workspaceRootEnv, using Sys.getCwd()');
+				LogLevel.setWorkspaceRoot(Sys.getCwd());
+			}
 			#end
 		}
 	}

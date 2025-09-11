@@ -34,9 +34,9 @@ class Script {
 	public inline function log(s:Dynamic, ?tag:String,?pos:haxe.PosInfos) {
 		// haxe doesn't set the pos.fileName between calls if it hasn't changed, so we can't just prepend the script directory or it will continue to grow
 		// so, we check to see if the pos.fileName starts with the script directory, and if it doesn't, we add it
-		if (pos != null && pos.fileName != null && !StringTools.startsWith(pos.fileName, scriptDirectory)) {
-			//pos.fileName = Path.join([scriptDirectory, pos.fileName]);			
-		}
+		//if (pos != null && pos.fileName != null && !StringTools.startsWith(pos.fileName, scriptDirectory)) {
+		//	pos.fileName = Path.join([scriptDirectory, pos.fileName]);			
+		//}
 		//Log.log(s, pos, (tag == null ? 'SCRIPT: ${scriptName}' : tag));
 		//trace(scriptDirectory);
 		Log.log(s, pos, (tag != null ? '[$tag]' : ''));

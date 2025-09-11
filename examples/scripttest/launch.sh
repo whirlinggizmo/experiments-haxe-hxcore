@@ -5,4 +5,11 @@
 
 # get the current directory (this shell script's directory)
 currentDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-$currentDir/out/ScriptTest  --sourceDir $currentDir/scripts --scriptDir $currentDir/gen --hotreload
+
+
+# Set environment variables
+export HXCORE_WORKSPACE_FOLDER="$currentDir/../.."
+export HXCORE_PROJECT_ROOT="$currentDir/../.."
+
+# Run the application
+$currentDir/out/ScriptTest --sourceDir $currentDir/scripts --scriptDir $currentDir/gen --hotreload

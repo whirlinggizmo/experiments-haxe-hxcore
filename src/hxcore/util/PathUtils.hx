@@ -58,9 +58,15 @@ class PathUtils {
 			}
 		}
 	
-		return [for (_ in 0...(aRelativeTo.length - 1) - matchesUpToIndex) '..']
+		var result =  [for (_ in 0...(aRelativeTo.length - 1) - matchesUpToIndex) '..']
 			.concat(aPath.slice(matchesUpToIndex + 1))
 			.join('/');
+
+		if (!StringTools.startsWith(result, "./")) {
+			result = "./" + result;
+		}
+
+		return result;
 	}
 
 	public static function getDirectoryTail(path:String):String {
