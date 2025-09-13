@@ -11,7 +11,7 @@ import hxcore.util.PathUtils;
 #if sys
 import hxcore.scripting.ScriptCompiler;
 import hxcore.io.FileWatcher;
-import hxcore.io.FileWatcher.FileEvent;
+import hxcore.io.FileWatcher.FileChangeEvent;
 import sys.FileSystem;
 #if scriptable
 import cpp.cppia.Module;
@@ -175,10 +175,10 @@ class ScriptLoader {
 		// so we don't need to remove it from the classNameAsPath
 		scriptDirectory = PathUtils.ensureDirectory(scriptDirectory);
 
-		var cppiaFileWatcher = new FileWatcher(scriptDirectory, (filename:String, event:FileEvent) -> {
-			if (event == FileEvent.Removed) {
+		var cppiaFileWatcher = new FileWatcher(scriptDirectory, (filename:String, event:FileChangeEvent) -> {
+			if (event == FileChangeEvent.Removed) {
 				Log.warn("Script file deleted " + filename);
-			} else if (event == FileEvent.Added) {
+			} else if (event == FileChangeEvent.Added) {
 				Log.info("Script file added " + filename);
 			} else {
 				Log.info("Script file changed: " + filename);
@@ -242,7 +242,7 @@ class ScriptLoader {
 		//var className = getClassName(scriptDirectory, scriptName);
 		//var scriptSourceFileFilter = buildFileFilter(className, "hx");
 
-		var haxeSourceFileWatcher = new FileWatcher(scriptSourceDirectory, (filename:String, event:FileEvent) -> {
+		var haxeSourceFileWatcher = new FileWatcher(scriptSourceDirectory, (filename:String, event:FileChangeEvent) -> {
 			Log.debug("Script source file changed: " + filename);
 			scriptChangedCallback(filename);
 		});

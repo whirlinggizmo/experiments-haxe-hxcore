@@ -7,13 +7,13 @@ import haxe.Timer;
 import sys.FileSystem;
 #end
 
-enum FileEvent {
+enum FileChangeEvent {
 	Added;
 	Modified;
 	Removed;
 }
 
-typedef FileChangeCallback = (String, FileEvent) -> Void;
+typedef FileChangeCallback = (String, FileChangeEvent) -> Void;
 #if sys
 var ignoredFiles = [".*/import.hx$"];
 var ignoredDirectories = ["unused"];
@@ -207,7 +207,7 @@ class FileWatcher {
 }
 #else
 class FileWatcher {
-	public function new(rootDirectory:String, filter:Null<String>, callback:FileChangeCallback, watchInterval:Int = 1000) {
+	public function new(rootDirectory:String, filter:Null<String>, callback:FileChangeCallback) {
 		Log.debug("FileWatcher not available on this platform (requires sys)");
 	}
 

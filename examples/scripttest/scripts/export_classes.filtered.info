@@ -73,7 +73,7 @@ class hxcore.logging.Log
 class hxcore.logging._Log.LogLevel_Impl_
 class hxcore.io._FileWatcher.FileWatcher_Fields_
 class hxcore.io.FileWatcher
-enum hxcore.io.FileEvent
+enum hxcore.io.FileChangeEvent
 class hxcore.events.EventEmitter
 class hxcore.ecs.EntityManager
 class hxcore.ecs.EIDGenerator
