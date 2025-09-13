@@ -1,6 +1,7 @@
 // src/hxcore/scripting/ScriptLoader.cpp.hx
 package hxcore.scripting;
 
+import hxcore.util.Glob;
 import sys.io.File;
 import hxcore.logging.Log;
 import hxcore.util.TypeUtils;
@@ -35,7 +36,8 @@ class ScriptLoader {
 	// ============================================================================
 
 
-
+/*
+// replaced with Glob.toERegString
 	private static function buildFileFilter(className:String, extension:String):String {
 		var filter = className;
 
@@ -53,6 +55,7 @@ class ScriptLoader {
 		// Make it an exact match
 		return "^" + filter + "$";
 	}
+	*/
 
 	private static function setScriptDirectory(scriptDirectory:String):Void {
 		ScriptLoader.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
@@ -106,6 +109,7 @@ class ScriptLoader {
 		return className;
 	}
 
+	/*
 	private static function getClassPath(scriptDirectory:String, scriptName:String):String {
 		// the scriptName is the class name of the script, so replace any '.' with '/'
 		var parts:Array<String> = scriptName.split('.');
@@ -119,14 +123,9 @@ class ScriptLoader {
 
 		return classPath;
 	}
+	*/
 
-	/**
-	 * createHotReloadWatcher()
-	 * Sets up a file watcher for the script file (.cppia) and calls the onChanged callback when the file changes
-	 * @param scriptDirectory : The root directory of the scripts (.cppia)
-	 * @param scriptName : The script (class) to watch.  e.g., "Test" or "mypackage.Test"
-	 * @param onChanged : The callback to call when the file changes. String->Void
-	 */
+
 	private static function validateWatcherSetup(scriptDirectory:String, scriptName:String, requiresExternal:Bool = false):Bool {
 		if (requiresExternal && !externalScriptsEnabled) {
 			Log.warn("External scripts not enabled");
@@ -143,6 +142,13 @@ class ScriptLoader {
 		return true;
 	}
 
+	/**
+	 * createHotReloadWatcher()
+	 * Sets up a file watcher for the script file (.cppia) and calls the onChanged callback when the file changes
+	 * @param scriptDirectory : The root directory of the scripts (.cppia)
+	 * @param scriptName : The script (class) to watch.  e.g., "Test" or "mypackage.Test"
+	 * @param onChanged : The callback to call when the file changes. String->Void
+	 */
 	private static function createHotReloadWatcher(scriptDirectory:String, scriptName:String, onChanged:String->Void) {
 		if (!hotReloadEnabled) {
 			Log.warn("Hot reload not enabled");
@@ -163,13 +169,13 @@ class ScriptLoader {
 			cppiaFileWatchers.remove(scriptName);
 		}
 
-		// break the scriptName into the package name and class name
-		var className = getClassName(scriptDirectory, scriptName);
-		var scriptCppiaFileFilter = buildFileFilter(className, "cppia");
+		var classNameAsPath = StringTools.replace(scriptName, ".", "/");
 
-		var scriptCppiaPath = getClassPath(scriptDirectory, scriptName);
+		// script directory should be a directory, but without the 'scripts' part.  
+		// so we don't need to remove it from the classNameAsPath
+		scriptDirectory = PathUtils.ensureDirectory(scriptDirectory);
 
-		var cppiaFileWatcher = new FileWatcher(scriptCppiaPath, scriptCppiaFileFilter, (filename:String, event:FileEvent) -> {
+		var cppiaFileWatcher = new FileWatcher(scriptDirectory, (filename:String, event:FileEvent) -> {
 			if (event == FileEvent.Removed) {
 				Log.warn("Script file deleted " + filename);
 			} else if (event == FileEvent.Added) {
@@ -179,6 +185,9 @@ class ScriptLoader {
 			}
 			onChanged(filename);
 		});
+		// make the classNameAsPath a relative path and add the .cppia extension
+		classNameAsPath = "./" + classNameAsPath + ".cppia";
+		cppiaFileWatcher.add(Glob.toEReg(classNameAsPath));
 
 		cppiaFileWatcher.start();
 		cppiaFileWatchers.set(scriptName, cppiaFileWatcher);
@@ -193,38 +202,62 @@ class ScriptLoader {
 	 * @param scriptName 
 	 * @param onLoaded 
 	 */
-	private static function createHotCompileWatcher(scriptDirectory:String, scriptName:String, scriptChangedCallback:String->Void) {
+	private static function createHotCompileWatcher(scriptSourceDirectory:String, className:String, scriptChangedCallback:String->Void) {
 		if (!hotCompileEnabled) {
 			Log.warn("Hot compile not enabled");
 			return;
 		}
 
 		#if (sys && scriptable)
-		if (!validateWatcherSetup(scriptDirectory, scriptName)) {
+		if (!validateWatcherSetup(scriptSourceDirectory, className)) {
 			return;
 		}
 
-		scriptDirectory = PathUtils.normalizePath(scriptDirectory);
+		scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
 		Log.info("Path for script source files(.hx) files is: " + scriptSourceDirectory);
 
-		classesInfoPath = Path.join([scriptDirectory, "export_classes.filtered.info"]);
+		// look for the export_classes.filtered.info file in the scriptSourceDirectory (which includes the scripts package directory)
+		classesInfoPath = Path.join([scriptSourceDirectory, "export_classes.filtered.info"]);
 
-		if (haxeSourceFileWatchers.exists(scriptName)) {
-			haxeSourceFileWatchers[scriptName].stop();
-			haxeSourceFileWatchers.remove(scriptName);
+		// the scriptSourceDirectory includes the top level script package directory already.
+		// we need to remove one of them (from the scripts directory, or from the className)
+		// we'll remove it from the className so we can restrict the watcher to files/directories under the scripts directory
+		// instead of all directories and files that are siblings (like src, bin, etc.).
+		
+		var scriptSourceDirectoryTail = PathUtils.getDirectoryTail(scriptSourceDirectory);
+		var classNameParts = className.split(".");
+		var classNameTopLevelPackage = classNameParts.shift();
+		// sanity check, make sure the first part of the script name (top level package) is the same we just removed
+		if (classNameTopLevelPackage != scriptSourceDirectoryTail) {
+			Log.error('Script class name top level package ($classNameTopLevelPackage) does not match script source directory ($scriptSourceDirectoryTail)');
+			return;
+		}
+
+		if (haxeSourceFileWatchers.exists(className)) {
+			haxeSourceFileWatchers[className].stop();
+			haxeSourceFileWatchers.remove(className);
 		}
 
 		// break the scriptName into the package name and class name
-		var className = getClassName(scriptDirectory, scriptName);
-		var scriptSourceFileFilter = buildFileFilter(className, "hx");
+		//var className = getClassName(scriptDirectory, scriptName);
+		//var scriptSourceFileFilter = buildFileFilter(className, "hx");
 
-		var haxeSourceFileWatcher = new FileWatcher(scriptSourceDirectory, scriptSourceFileFilter, (filename:String, event:FileEvent) -> {
+		var haxeSourceFileWatcher = new FileWatcher(scriptSourceDirectory, (filename:String, event:FileEvent) -> {
 			Log.debug("Script source file changed: " + filename);
 			scriptChangedCallback(filename);
 		});
+		var classNameAsPathWithoutTopLevelPackage = classNameParts.join("/");
+		// make the classNameAsPath a relative path and add the .hx extension
+		classNameAsPathWithoutTopLevelPackage = "./" + classNameAsPathWithoutTopLevelPackage + ".hx";
+
+
+		var eregClassNameAsPath = Glob.toEReg(classNameAsPathWithoutTopLevelPackage);
+		Log.debug("eregClassNameAsPath: " + eregClassNameAsPath);
+
+		haxeSourceFileWatcher.add(eregClassNameAsPath);
 
 		haxeSourceFileWatcher.start();
-		haxeSourceFileWatchers.set(scriptName, haxeSourceFileWatcher);
+		haxeSourceFileWatchers.set(className, haxeSourceFileWatcher);
 		#else
 		Log.warn("HotCompileWatcher not created (requires sys, -D scriptable)");
 		#end

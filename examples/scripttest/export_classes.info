@@ -35,6 +35,7 @@ interface sys.db.ResultSet
 class sys.db._Mysql.D
 interface sys.db.Connection
 class sys.FileSystem
+class scripts.Test
 class hxcpp.debug.jsonrpc.eval.Tools
 enum hxcpp.debug.jsonrpc.eval.Token
 class hxcpp.debug.jsonrpc.eval.Interp

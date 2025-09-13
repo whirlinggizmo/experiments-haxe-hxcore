@@ -7,15 +7,6 @@ import sys.FileSystem;
 #end
 
 class PathUtils {
-	public static function globToRegex(pattern:String):EReg {
-		// Convert glob pattern to regular expression
-		var regexPattern = StringTools.replace(pattern, ".", "\\."); // Escape dots
-		regexPattern = StringTools.replace(regexPattern, "*", ".*"); // Replace '*' with '.*' to match any characters
-		regexPattern = StringTools.replace(regexPattern, "?", "."); // Replace '?' with '.' to match any single character
-		// Log.debug('regexPattern:' + regexPattern);
-		return new EReg("^" + regexPattern + "$", "");
-	}
-
 	/**
 	 * Calculates the relative path from one absolute path to another.
 	 * 
@@ -70,24 +61,34 @@ class PathUtils {
 		return result;
 	}
 
+	public static function ensureDirectory(path:String):String {
+		path = normalizePath(path);
+		if (FileSystem.exists(path)) {
+			if (FileSystem.isDirectory(path)) {
+				return path; // = Path.addTrailingSlash(path);
+			}
+		}
+		Log.error('Path is not a directory: $path');
+		return Path.directory(path);
+	}
+
 	public static function getDirectoryTail(path:String):String {
-		var normalizedPath = Path.normalize(path); // clean it and fix windows slashes
-		var dir = Path.directory(path); // remove filename if any
-		var parts = dir.split("/"); // split into path segments
+		// var normalizedPath = normalizePath(path); // clean it and fix windows slashes
+		var dir = ensureDirectory(path); // remove filename if any
+		var parts = dir.split("/");
 		return parts[parts.length - 1];
 	}
 
 	public static function getDirectoryHead(path:String):String {
-		var normalizedPath = Path.normalize(path); // clean it and fix windows slashes
-		var dir = Path.directory(path); // remove filename if any
+		var dir = ensureDirectory(path); // remove filename if any
 		var parts = dir.split("/"); // split into path segments
 		return parts[0];
 	}
 
 	public static function getDirectoryParent(path:String):String {
-		var dir = Path.directory(path); // strips off filename if present
-		var normalized = Path.normalize(dir); // ensures consistent "/"
-		var parts = normalized.split("/");
+		var dir = ensureDirectory(path); // strips off filename if present
+		// var normalized = normalizePath(dir); // ensures consistent "/"
+		var parts = dir.split("/");
 
 		if (parts.length <= 1)
 			return ""; // root or already at top level
@@ -131,7 +132,7 @@ class PathUtils {
 			Log.warn('Path is already absolute: $path');
 			return path;
 		}
-		
+
 		return normalizePath(Path.join([base, path]));
 	}
 
@@ -139,8 +140,9 @@ class PathUtils {
 		if (path == null || path.length == 0) {
 			return false;
 		}
-			return FileSystem.exists(path) && !FileSystem.isDirectory(path);
+		return FileSystem.exists(path) && !FileSystem.isDirectory(path);
 	}
+
 	private static function validateDirectoryPath(path:String):Bool {
 		if (path == null || path.length == 0) {
 			return false;
