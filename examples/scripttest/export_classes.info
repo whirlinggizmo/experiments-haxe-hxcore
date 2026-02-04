@@ -382,10 +382,10 @@ file hxcore/util/MathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/ha
 file hxcore/util/PathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/PathUtils.hx
 file hxcore/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/TypeUtils.hx
 file hxcore/util/UpdateHandler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/UpdateHandler.hx
-file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/vendor/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx
-file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/vendor/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx
-file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/vendor/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/VariablesPrinter.hx
-file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/vendor/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx
-file hxcpp/debug/jsonrpc/eval/Parser.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/vendor/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Parser.hx
-file hxcpp/debug/jsonrpc/eval/Tools.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/vendor/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Tools.hx
+file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx
+file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx
+file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/VariablesPrinter.hx
+file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx
+file hxcpp/debug/jsonrpc/eval/Parser.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Parser.hx
+file hxcpp/debug/jsonrpc/eval/Tools.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Tools.hx
 file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/scripts/Test.hx

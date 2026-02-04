@@ -1,11 +1,13 @@
 --library hxcore
---run hxcore.scripting.ScriptCompiler
---target cppia
---sourceDir scripts
---outputDir gen
+#--run hxcore.scripting.ScriptCompiler
+#--target cppia
+#--sourceDir scripts
+#--outputDir gen
 
+#--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
 
+--macro hxcore.scripting.ScriptCompiler.compileScripts('scripts', 'gen', '.', 'cppia')
 # Leave the --class dangling so we can add one on the command line (e.g. haxe hxml/examples/scripttest/compile.script.class.hxml Test)
 # Note:  Not sure I love this, since anything else in this file will be passed along as an arg (including --next, --cmd, etc)
 # I've added an 'end of arguments' marker ('--'), so anything after that won't be considered by the ScriptCompiler, but the args will still be consumed
---class 
+#--class 

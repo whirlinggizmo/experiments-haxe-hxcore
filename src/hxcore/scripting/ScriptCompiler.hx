@@ -297,17 +297,17 @@ class ScriptCompiler {
 		return classNames;
 	}
 
-	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, target:String,
+	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, targetType:String,
 			haxeArgs:Array<String>, className:String):Int {
-		// strip any preceding '.' from the extension
-		if (StringTools.startsWith(target, ".")) {
-			target = target.substring(1);
+		// strip any preceding '.' from the extension (.cppia -> cppia)
+		if (StringTools.startsWith(targetType, ".")) {
+			targetType = targetType.substring(1);
 		}
 
 		rootDir = rootDir ?? Sys.getCwd();
 		haxeArgs = haxeArgs ?? [];
 
-		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, target, haxeArgs, className);
+		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, targetType, haxeArgs, className);
 
 		if (result != 0) {
 			Log.error("Failed to compile class: " + className);
@@ -319,7 +319,7 @@ class ScriptCompiler {
 	}
 
 	macro static public function compileScriptFromFilename(filename:String, scriptsDir:String = 'scripts', outputDir:String = 'gen',
-			classesInfoPath:String = '.', target:String = "cppia"):Void {
+			classesInfoPath:String = 'export_classes.filtered.info', target:String = "cppia"):Void {
 		// Parse filename into package structure
 		// e.g., "ui/Button.hx" -> package "ui", className "Button"
 		// e.g., "game/player/Player.hx" -> package "game.player", className "Player"
@@ -351,8 +351,10 @@ class ScriptCompiler {
 		}
 	}
 
-	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = '.',
+	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = 'export_classes.filtered.info',
 			extension:String = "js"):Void {
+
+		//trace('CWD: ${Sys.getCwd()}');
 		var files = PathUtils.getFilesRecursive(scriptsDir);
 
 		// only include .hx files

@@ -16,6 +16,9 @@ class ScriptTest {
 	public function init(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableHotReload:Bool = false) {
 		Log.info('Hello, World!');
 
+		Log.debug('CWD: ' + Sys.getCwd() );
+
+
 		Log.debug('scriptDirectory: ' + scriptDirectory);
 		Log.debug('scriptSourceDirectory: ' + scriptSourceDirectory);
 		Log.debug('enableHotReload: ' + enableHotReload);

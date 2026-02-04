@@ -75,8 +75,10 @@ scripts.Test
 # Instead, we'll invoke the macro directly.
 # BTW:  From the command line, you can rebuild the script with "haxe hxml/examples/scripttest/compile.script.class.hxml Test", in case you don't have the hot-compile feature enabled.
 
-#-lib hxcore
-#--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')
+-lib hxcore
+#	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, targetType:String,
+
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'gen', 'scripts/export_classes.filtered.info', 'cppia', [], 'scripts.Test')
 
 --cmd echo "Build of ScriptTest complete."
 

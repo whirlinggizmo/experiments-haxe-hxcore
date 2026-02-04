@@ -4,6 +4,8 @@
 --sourceDir scripts
 --outputDir dist/app/scripts
 
+--cpp out/bitbucket
+--no-output
 
 # Leave the --class dangling so we can add one on the command line (e.g. haxe hxml/examples/capp/compile.script.class.hxml Test)
 # Note:  Not sure I love this, since anything else in this file will be passed along as an arg (including --next, --cmd, etc)

@@ -252,7 +252,7 @@ class ScriptLoader {
 
 
 		var eregClassNameAsPath = Glob.toEReg(classNameAsPathWithoutTopLevelPackage);
-		Log.debug("eregClassNameAsPath: " + eregClassNameAsPath);
+		//Log.debug("eregClassNameAsPath: " + eregClassNameAsPath);
 
 		haxeSourceFileWatcher.add(eregClassNameAsPath);
 

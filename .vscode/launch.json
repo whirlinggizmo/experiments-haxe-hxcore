@@ -8,7 +8,6 @@
             "name": "Launch ScriptTest",
             "type": "hxcpp",
             "request": "launch",
-            
             // grrr!  hxcpp debugger for vscode doesn't allow specifying a working directory, nor args
             //"program": "${workspaceFolder}/example/dist/scripttest/ScriptTest",
             // "cwd": "${workspaceFolder}/example/out/scripttest",
@@ -20,16 +19,19 @@
             // so instead, we use a shell script to launch it:
             //"program": "${workspaceFolder}/examples/scripttest/launch.sh",    
 
-            // 03Feb2026:  Vendored the extension and added support for cwd and args.
-            "program": "${workspaceFolder}/example/dist/scripttest/ScriptTest",
-            "cwd": "${workspaceFolder}/example/out/scripttest",
+            // 03Feb2026:  Vendored the extension and added support for cwd and args.            
+            
+            "program": "${workspaceFolder}/examples/scripttest/out/ScriptTest",
+            "cwd": "${workspaceFolder}/examples/scripttest",
             "args": [
-               "--rootDir", "${workspaceFolder}/example",
-               "--sourceDir", "${workspaceFolder}/example/scripts",
-               "--scriptDir", "${workspaceFolder}/example/dist/scripts"
-            ]
-
-
+                "--sourceDir",
+                "scripts",
+                "--scriptDir",
+                "gen",
+                "--hotreload"
+            ],
+            
+            "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "name": "Launch SystemTest",

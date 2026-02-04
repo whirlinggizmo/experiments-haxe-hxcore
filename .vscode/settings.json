@@ -13,8 +13,8 @@
         {
             "command": "haxe",
             "args": [
-                //"--cwd", "examples/scripttest",
-                "examples/scripttest/build.hxml"
+                "--cwd", "${workspaceFolder}/examples/scripttest",
+                "build.hxml"
             ],
             "clearOutput": true,
             "globMatch": "examples/scripttest/src/**/*.hx",

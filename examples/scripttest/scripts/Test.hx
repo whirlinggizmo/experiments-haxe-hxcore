@@ -12,7 +12,7 @@ class Test extends Script {
 	} 
 
 	override function onUpdate(deltaTimeMS:Float) {
-		log('Update: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
+		//log('Update: (${Math.round(deltaTimeMS)} ms, ${FPSCounter.FPS()} fps)');
 	}
 
 	//override function onFixedUpdate(frameDurationMS:Float) {

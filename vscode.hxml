@@ -8,10 +8,27 @@
 #-cp examples/systemtest
 
 -cp src
+
+# flecstest hx source
 -cp examples/flecstest/src
+
+# scripttest hx source
 -cp examples/scripttest/src
+
+# scripttest scripts (hx->cppia)
+-cp examples/scripttest
+
+# systemtest hx source
 -cp examples/systemtest/src
+
+# capp hx source
 -cp examples/capp/src/hx
 
-#-D scriptable
+# set the define so those blocks are parsed
+-D scriptable
+
+# enable the cpp target so sys/cpp modules are found
+-cpp out/bitbucket
+
+# this hxml is just for the language server, don't actually build anything!
 --no-output

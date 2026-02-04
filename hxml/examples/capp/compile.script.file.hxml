@@ -5,6 +5,9 @@
 --outputDir dist/app/scripts
 --classesInfo export_classes.info
 
+--cpp out/bitbucket
+--no-output
+
 # Usage examples:
 # haxe hxml/examples/capp/compile.script.file.hxml --file ui/Button.hx
 # haxe hxml/examples/capp/compile.script.file.hxml --file game/player/Player.hx  
