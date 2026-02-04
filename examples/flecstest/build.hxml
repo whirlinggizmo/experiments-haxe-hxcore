@@ -10,7 +10,7 @@
 # enable scripting since we are a cppia host
 #-D scriptable 
 
--D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
+#-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
 
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV
@@ -30,9 +30,9 @@
 
 
 # copy the executable to the dist directory
---cmd mkdir -p dist
---cmd pkill -9 FlecsTest || true
---cmd cp out/FlecsTest dist/FlecsTest
+#--cmd mkdir -p dist
+#--cmd pkill -9 FlecsTest || true
+#--cmd cp out/FlecsTest dist/FlecsTest
 
 
 --cmd echo "Build of FlecsTest complete."

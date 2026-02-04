@@ -1,60 +1,89 @@
-import hxcore.flecs.Flecs;
-import cpp.UInt32;
 import cpp.Float32;
-import cpp.Native.sizeof;
+import cpp.Native;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.Component;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.Entity;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.System;
 
 @:structAccess
 @:structInit
 @:nativeGen
 @:native("MyComponent")
 class MyComponent {
-    public var x:Float32;
-    public var y:Float32;
+  public var x:Float32;
+  public var y:Float32;
+
+  public function new() {}
 }
 
+@:structAccess
+@:structInit
+@:nativeGen
+@:native("SysPos")
+class SysPos {
+  public var x:Float32;
+  public var y:Float32;
 
+  public function new() {}
+}
+
+@:structAccess
+@:structInit
+@:nativeGen
+@:native("SysVel")
+class SysVel {
+  public var x:Float32;
+  public var y:Float32;
+
+  public function new() {}
+}
 
 class SystemTest {
+  public static function main() {
+    Flecs.init();
 
-    public static function main() {
-        Flecs.init();
+    var position = Component.create("SysPos", Native.sizeof(SysPos));
+    var velocity = Component.create("SysVel", Native.sizeof(SysVel));
+    var myComponent = Component.create("MyComponent", Native.sizeof(MyComponent));
 
-        // Get the component ID for "Position" from the C API
-        var positionComponentId:Int = Flecs.getComponentId("Position");
-        var velocityComponentId:Int = Flecs.getComponentId("Velocity");
-        //trace(sizeof(MyComponent));
-        var myComponentId:Int = Flecs.createComponent("MyComponent", sizeof(MyComponent));
+    var entity = Entity.create("Entity");
+    var posVal = new SysPos();
+    posVal.x = 0.0;
+    posVal.y = 0.0;
+    entity.set(position, posVal);
 
+    var velVal = new SysVel();
+    velVal.x = 1.0;
+    velVal.y = 1.5;
+    entity.set(velocity, velVal);
+    entity.add(myComponent);
 
-        // Register the system for entities with Position
-       //Flecs.registerSystem("TestSystem", testSystemCallback, [positionComponentId, velocityComponentId]);
-
-        // Create an entity with Position
-        var entityId:UInt32 = Flecs.createEntity("Entity");
-        Flecs.addComponent(entityId, positionComponentId);
-        Flecs.addComponent(entityId, velocityComponentId);
-       // Flecs.setVelocity(entityId, 1.0, 1.0);
-       // Flecs.setPosition(entityId, 0.0, 0.0);
-
-        // Run the Flecs loop
-        
-        // loop for 1000 times, simulating 60 FPS
-        for (i in 0...1000) {
-            Flecs.progress(0); // Simulate 60 FPS
+    var sysId = System.addSystemIds("TestSystem", [position.id, velocity.id], function(it) {
+      var count:Int = cast it.count;
+      for (i in 0...count) {
+        var p:cpp.Pointer<SysPos> = it.colTyped(position.id, i);
+        var v:cpp.Pointer<SysVel> = it.colTyped(velocity.id, i);
+        if (p != null && v != null) {
+          p.ref.x += v.ref.x * it.dt;
+          p.ref.y += v.ref.y * it.dt;
         }
+      }
+    });
 
-        Flecs.fini();
+    if (sysId == 0) {
+      throw "Failed to register system";
     }
 
-    // System callback: receives entityId, pointer array, and count
-    static function testSystemCallback(
-        entityId:UInt32,
-        components:Array<Dynamic>,
-        numComponents:UInt32
-    ):Void {
-        //trace('testSystemCallback called for entity $entityId with $numComponents components');
-        trace('Position: (${components[0].x}, ${components[0].y})');
-
-        //Flecs.setPosition(entityId, components[0].x + components[1].x, components[0].y + components[1].y);
+    for (i in 0...10) {
+      Flecs.progress(0.1);
     }
+
+    var p2Ptr:cpp.Pointer<SysPos> = entity.getPtr(position);
+    if (p2Ptr != null) {
+      var p2 = p2Ptr.ref;
+      trace('Position: (${p2.x}, ${p2.y})');
+    }
+
+    Flecs.fini();
+  }
 }

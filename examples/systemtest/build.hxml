@@ -11,7 +11,7 @@
 # enable cppia
 #-D scriptable 
 
--D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
+#-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
 
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV
@@ -20,7 +20,7 @@
 # debugging
 --debug
 # vscode debugger
--lib hxcpp-debug-server
+#-lib hxcpp-debug-server
 --dce no
 
 --define HAXE_OUTPUT_FILE=SystemTest

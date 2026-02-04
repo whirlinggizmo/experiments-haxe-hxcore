@@ -15,6 +15,21 @@
       "problemMatcher": [
         "$haxe"
       ]
+    },
+       {
+      "label": "Build FlecsTest",
+      "type": "shell",
+      "command": "haxe",
+      "args": [
+        "build.hxml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/examples/flecstest"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$haxe"
+      ]
     }
   ]
 }

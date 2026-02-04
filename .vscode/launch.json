@@ -29,8 +29,7 @@
                 "--scriptDir",
                 "gen",
                 "--hotreload"
-            ],
-            
+            ],            
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
