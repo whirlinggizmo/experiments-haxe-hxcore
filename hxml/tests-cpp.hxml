@@ -1,0 +1,8 @@
+-lib utest
+-cp src
+-cp tests
+--main tests.RunTests
+--dce no
+-D scriptable
+-cpp out/tests-cpp
+--cmd ./out/tests-cpp/RunTests

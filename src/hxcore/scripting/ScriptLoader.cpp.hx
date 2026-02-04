@@ -8,8 +8,14 @@ import hxcore.util.TypeUtils;
 import hxcore.scripting.Script;
 import haxe.io.Path;
 import hxcore.util.PathUtils;
+import hxcore.scripting.ScriptResolution;
+import hxcore.scripting.ScriptResolution.OverrideMode;
+import hxcore.scripting.ScriptResolution.ScriptSource;
+import hxcore.scripting.Types.HotCompileScope;
+import hxcore.scripting.Types.ScriptInfo;
 #if sys
 import hxcore.scripting.ScriptCompiler;
+import hxcore.scripting.ScriptWatcher;
 import hxcore.io.FileWatcher;
 import hxcore.io.FileWatcher.FileChangeEvent;
 import sys.FileSystem;
@@ -17,18 +23,24 @@ import sys.FileSystem;
 import cpp.cppia.Module;
 #end
 #end
-class ScriptLoader {
-	private static var scriptCache:Map<String, ScriptInfo> = new Map<String, ScriptInfo>();
-	private static var scriptDirectory:String;
-	private static var scriptSourceDirectory:String;
-	private static var classesInfoPath:String = ".";
-	private static var hotReloadEnabled:Bool = false;
-	private static var hotCompileEnabled:Bool = false;
-	private static var externalScriptsEnabled:Bool = false;
+class ScriptLoader implements IScriptLoader {
+	public function new() {}
+	private var scriptCache:Map<String, ScriptInfo> = new Map<String, ScriptInfo>();
+	private var scriptDirectory:String;
+	private var scriptSourceDirectory:String;
+	private var classesInfoPath:String = ".";
+	private var hotReloadEnabled:Bool = false;
+	private var hotCompileEnabled:Bool = false;
+	private var externalScriptsEnabled:Bool = false;
+	private var overrideMode:OverrideMode = OverrideMode.ExternalFirst;
+	private var changeDebounceMs:Int = 150;
+	private var hotCompileScope:HotCompileScope = HotCompileScope.ScriptOnly;
+	private var watcher:ScriptWatcher = null;
 
 	#if sys
-	private static var haxeSourceFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
-	private static var cppiaFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
+	private var haxeSourceFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
+	private var cppiaFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
+	private var cppiaLastReloadMtime:Map<String, Float> = new Map<String, Float>();
 	#end
 
 	// ============================================================================
@@ -36,9 +48,9 @@ class ScriptLoader {
 	// ============================================================================
 
 
-/*
+	/*
 // replaced with Glob.toERegString
-	private static function buildFileFilter(className:String, extension:String):String {
+	private function buildFileFilter(className:String, extension:String):String {
 		var filter = className;
 
 		// Convert package dots to path separators
@@ -57,16 +69,21 @@ class ScriptLoader {
 	}
 	*/
 
-	private static function setScriptDirectory(scriptDirectory:String):Void {
-		ScriptLoader.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
+
+	public function setScriptDirectory(scriptDirectory:String):Void {
+		this.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 	}
 
-	public static function enableExternalScripts(scriptDirectory:String):Void {
+	public function setScriptSourceDirectory(scriptSourceDirectory:String):Void {
+		this.scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
+	}
+
+	public function enableExternalScripts(scriptDirectory:String):Void {
 		#if (!sys || !scriptable)
 		Log.warn("External script loading not available on this platform (requires sys, scriptable)");
 		return;
 		#end
-		ScriptLoader.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
+		this.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 		externalScriptsEnabled = true;
 
 		#if !emscripten
@@ -74,7 +91,51 @@ class ScriptLoader {
 		#end
 	}
 
-	public static function enableJITCompilation(enable:Bool):Void {
+	public function setExternalEnabled(enable:Bool, ?scriptDirectory:String):Void {
+		if (enable) {
+			if (scriptDirectory != null) {
+				enableExternalScripts(scriptDirectory);
+			} else if (this.scriptDirectory != null) {
+				enableExternalScripts(this.scriptDirectory);
+			} else {
+				Log.warn("External scripts enabled without script directory");
+				externalScriptsEnabled = true;
+			}
+		} else {
+			externalScriptsEnabled = false;
+		}
+	}
+
+	public function setOverrideMode(mode:OverrideMode):Void {
+		overrideMode = mode;
+	}
+
+	public function setChangeDebounceMs(ms:Int):Void {
+		if (ms < 0) {
+			Log.warn("Debounce must be >= 0");
+			return;
+		}
+		changeDebounceMs = ms;
+		if (watcher != null) {
+			watcher.debounceMs = changeDebounceMs;
+		}
+	}
+
+	/**
+	 * Force a watcher scan pass (useful for deterministic tests).
+	 */
+	public function tickWatchers():Void {
+		#if sys
+		for (w in haxeSourceFileWatchers) {
+			w.tick();
+		}
+		for (w in cppiaFileWatchers) {
+			w.tick();
+		}
+		#end
+	}
+
+	public function enableJITCompilation(enable:Bool):Void {
 		#if (!cpp || !scriptable || emscripten)
 		Log.warn("JIT compilation not available on this platform (requires cpp + scriptable, not emscripten)");
 		return;
@@ -84,7 +145,7 @@ class ScriptLoader {
 	}
 
 
-	public static function enableHotReload():Void {
+	public function enableHotReload():Void {
 		#if (sys && scriptable)
 		hotReloadEnabled = true;
 		#else
@@ -92,16 +153,40 @@ class ScriptLoader {
 		#end
 	}
 
-	public static function enableHotCompile(scriptSourceDirectory:String):Void {
+	public function setHotReloadEnabled(enable:Bool):Void {
+		if (enable) {
+			enableHotReload();
+		} else {
+			hotReloadEnabled = false;
+		}
+	}
+
+	public function enableHotCompile(scriptSourceDirectory:String):Void {
 		#if sys
-		ScriptLoader.scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
+		this.scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
 		hotCompileEnabled = true;
 		#else
 		Log.warn("Hot compile not available on this platform (requires sys)");
 		#end
 	}
 
-	private static function getClassName(scriptDirectory:String, scriptName:String):String {
+	public function setHotCompileEnabled(enable:Bool, ?scriptSourceDirectory:String):Void {
+		if (enable) {
+			if (scriptSourceDirectory == null) {
+				Log.warn("Hot compile enabled without script source directory");
+				return;
+			}
+			enableHotCompile(scriptSourceDirectory);
+		} else {
+			hotCompileEnabled = false;
+		}
+	}
+
+	public function setHotCompileScope(scope:HotCompileScope):Void {
+		hotCompileScope = scope;
+	}
+
+	private function getClassName(scriptDirectory:String, scriptName:String):String {
 		// the scriptName is the class name of the script, so replace any '.' with '/'
 		var parts:Array<String> = scriptName.split('.');
 		var className:String = parts[parts.length - 1];
@@ -110,7 +195,7 @@ class ScriptLoader {
 	}
 
 	/*
-	private static function getClassPath(scriptDirectory:String, scriptName:String):String {
+	private function getClassPath(scriptDirectory:String, scriptName:String):String {
 		// the scriptName is the class name of the script, so replace any '.' with '/'
 		var parts:Array<String> = scriptName.split('.');
 		// prepend the script directory
@@ -126,7 +211,7 @@ class ScriptLoader {
 	*/
 
 
-	private static function validateWatcherSetup(scriptDirectory:String, scriptName:String, requiresExternal:Bool = false):Bool {
+	private function validateWatcherSetup(scriptDirectory:String, scriptName:String, requiresExternal:Bool = false):Bool {
 		if (requiresExternal && !externalScriptsEnabled) {
 			Log.warn("External scripts not enabled");
 			return false;
@@ -149,7 +234,7 @@ class ScriptLoader {
 	 * @param scriptName : The script (class) to watch.  e.g., "Test" or "mypackage.Test"
 	 * @param onChanged : The callback to call when the file changes. String->Void
 	 */
-	private static function createHotReloadWatcher(scriptDirectory:String, scriptName:String, onChanged:String->Void) {
+	private function createHotReloadWatcher(scriptDirectory:String, scriptName:String, onChanged:String->Void) {
 		if (!hotReloadEnabled) {
 			Log.warn("Hot reload not enabled");
 			return;
@@ -161,7 +246,7 @@ class ScriptLoader {
 
 		scriptDirectory = PathUtils.normalizePath(scriptDirectory);
 
-		Log.info("Path for compiled script files(.cppia) files is: " + scriptDirectory);
+		Log.debug("Path for compiled script files(.cppia) files is: " + scriptDirectory);
 
 		// remove any existing cppia file watchers
 		if (cppiaFileWatchers.exists(scriptName)) {
@@ -175,22 +260,13 @@ class ScriptLoader {
 		// so we don't need to remove it from the classNameAsPath
 		scriptDirectory = PathUtils.ensureDirectory(scriptDirectory);
 
-		var cppiaFileWatcher = new FileWatcher(scriptDirectory, (filename:String, event:FileChangeEvent) -> {
-			if (event == FileChangeEvent.Removed) {
-				Log.warn("Script file deleted " + filename);
-			} else if (event == FileChangeEvent.Added) {
-				Log.info("Script file added " + filename);
-			} else {
-				Log.info("Script file changed: " + filename);
-			}
-			onChanged(filename);
-		});
-		// make the classNameAsPath a relative path and add the .cppia extension
-		classNameAsPath = "./" + classNameAsPath + ".cppia";
-		cppiaFileWatcher.add(Glob.toEReg(classNameAsPath));
-
-		cppiaFileWatcher.start();
-		cppiaFileWatchers.set(scriptName, cppiaFileWatcher);
+		if (watcher == null) {
+			watcher = new ScriptWatcher(changeDebounceMs);
+		}
+		var cppiaFileWatcher = watcher.watchCompiled(scriptDirectory, scriptName, onChanged);
+		if (cppiaFileWatcher != null) {
+			cppiaFileWatchers.set(scriptName, cppiaFileWatcher);
+		}
 		#else
 		Log.warn("HotReloadWatcher not created, requires sys, -D scriptable");
 		#end
@@ -202,7 +278,7 @@ class ScriptLoader {
 	 * @param scriptName 
 	 * @param onLoaded 
 	 */
-	private static function createHotCompileWatcher(scriptSourceDirectory:String, className:String, scriptChangedCallback:String->Void) {
+	private function createHotCompileWatcher(scriptSourceDirectory:String, className:String, scriptChangedCallback:String->Void) {
 		if (!hotCompileEnabled) {
 			Log.warn("Hot compile not enabled");
 			return;
@@ -214,7 +290,7 @@ class ScriptLoader {
 		}
 
 		scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
-		Log.info("Path for script source files(.hx) files is: " + scriptSourceDirectory);
+		Log.debug("Path for script source files(.hx) files is: " + scriptSourceDirectory);
 
 		// look for the export_classes.filtered.info file in the scriptSourceDirectory (which includes the scripts package directory)
 		classesInfoPath = Path.join([scriptSourceDirectory, "export_classes.filtered.info"]);
@@ -242,22 +318,19 @@ class ScriptLoader {
 		//var className = getClassName(scriptDirectory, scriptName);
 		//var scriptSourceFileFilter = buildFileFilter(className, "hx");
 
-		var haxeSourceFileWatcher = new FileWatcher(scriptSourceDirectory, (filename:String, event:FileChangeEvent) -> {
-			Log.debug("Script source file changed: " + filename);
-			scriptChangedCallback(filename);
-		});
-		var classNameAsPathWithoutTopLevelPackage = classNameParts.join("/");
-		// make the classNameAsPath a relative path and add the .hx extension
-		classNameAsPathWithoutTopLevelPackage = "./" + classNameAsPathWithoutTopLevelPackage + ".hx";
-
-
-		var eregClassNameAsPath = Glob.toEReg(classNameAsPathWithoutTopLevelPackage);
-		//Log.debug("eregClassNameAsPath: " + eregClassNameAsPath);
-
-		haxeSourceFileWatcher.add(eregClassNameAsPath);
-
-		haxeSourceFileWatcher.start();
-		haxeSourceFileWatchers.set(className, haxeSourceFileWatcher);
+		if (watcher == null) {
+			watcher = new ScriptWatcher(changeDebounceMs);
+		}
+		// TODO: Consider dependency tracking to avoid recompiling on unrelated changes.
+		var haxeSourceFileWatcher = switch (hotCompileScope) {
+			case HotCompileScope.SourceRoot:
+				watcher.watchSourceRoot(scriptSourceDirectory, scriptChangedCallback);
+			case HotCompileScope.ScriptOnly:
+				watcher.watchSource(scriptSourceDirectory, className, scriptChangedCallback);
+		};
+		if (haxeSourceFileWatcher != null) {
+			haxeSourceFileWatchers.set(className, haxeSourceFileWatcher);
+		}
 		#else
 		Log.warn("HotCompileWatcher not created (requires sys, -D scriptable)");
 		#end
@@ -267,54 +340,62 @@ class ScriptLoader {
 	 * Try to load a script class from the script directory or fallback to compiled-in scripts.
 	 * Ensures class is derived from Script, instantiates it, and sets metadata.
 	 */
-	private static function createScriptInstance(scriptDirectory:String, className:String):ScriptInfo {
+	private function createScriptInstance(scriptDirectory:String, className:String):ScriptInfo {
 		scriptDirectory = Path.addTrailingSlash(PathUtils.normalizePath(scriptDirectory));
 		var classNameAsPath = StringTools.replace(className, ".", "/");
 		var sourceFilePath = PathUtils.normalizePath(Path.join([scriptDirectory, classNameAsPath + ".cppia"]));
 		var resolvedClass:Class<Dynamic> = null;
 		final scriptInfo:ScriptInfo = {className: className, sourcePath: sourceFilePath};
 		#if scriptable
-		try {
-			if (!externalScriptsEnabled) {
-				throw('External scripts not enabled, trying internal scripts instead: $className');
-			}
-			if (!FileSystem.exists(scriptDirectory)) {
-				throw 'Script directory not found: $scriptDirectory';
-			}
+		var internalClass:Class<Dynamic> = Type.resolveClass(className);
+		var hasInternal = internalClass != null;
+		var hasExternal = externalScriptsEnabled && FileSystem.exists(scriptDirectory) && FileSystem.exists(sourceFilePath);
+		var sourceChoice = ScriptResolution.chooseSourceWithExternalEnabled(hasExternal, hasInternal, externalScriptsEnabled, overrideMode);
 
-			if (!FileSystem.exists(sourceFilePath)) {
-				throw 'Script file not found: $sourceFilePath';
-			}
+		function tryLoadExternal():Class<Dynamic> {
+			try {
+				final fileBytes = File.getBytes(sourceFilePath);
+				if (fileBytes == null) throw 'Failed to load module (bad data): $sourceFilePath';
+				final data = fileBytes.getData();
+				if (data == null) throw 'Failed to load module (bad data): $sourceFilePath';
 
-			final fileBytes = File.getBytes(sourceFilePath);
-			if (fileBytes == null) {
-				throw 'Failed to load module (bad data): $sourceFilePath';
-			}
-			final data = fileBytes.getData();
-			if (data == null) {
-				throw 'Failed to load module (bad data): $sourceFilePath';
-			}
+				final module = Module.fromData(data);
+				module.boot();
+				// module.run();
 
-			final module = Module.fromData(data);
-			module.boot();
-			// module.run();
+				// prepend the generated script namespace to the class name if it's not empty
+				var generatedScriptNamespace = ScriptCompiler.getGeneratedScriptNamespace();
+				var generatedClassName = (generatedScriptNamespace.length > 0) ? generatedScriptNamespace + "." + className : className;
 
-			// prepend the generated script namespace to the class name if it's not empty
-			var generatedScriptNamespace = ScriptCompiler.getGeneratedScriptNamespace();
-			var generatedClassName = (generatedScriptNamespace.length > 0) ? generatedScriptNamespace + "." + className : className;
-
-			// try to resolve the generated class name from the loaded module
-			resolvedClass = module.resolveClass(generatedClassName);
-			if (resolvedClass == null) {
-				throw 'Failed to resolve cppia class: $generatedClassName';
+				var cls = module.resolveClass(generatedClassName);
+				if (cls == null) throw 'Failed to resolve cppia class: $generatedClassName';
+				scriptInfo.isExternal = true;
+				scriptInfo.sourcePath = sourceFilePath;
+				return cls;
+			} catch (e:Dynamic) {
+				#if cpp
+				Sys.println(haxe.CallStack.exceptionStack());
+				#end
+				Log.warn('Failed to load cppia module: $sourceFilePath\n' + Std.string(e));
+				return null;
 			}
-			scriptInfo.isExternal = true;
-			scriptInfo.sourcePath = sourceFilePath;
-		} catch (e:Dynamic) {
-			#if cpp
-			Sys.println(haxe.CallStack.exceptionStack());
-			#end
-			Log.warn('Failed to load cppia module: $sourceFilePath\n' + Std.string(e));
+		}
+
+		switch (sourceChoice) {
+			case ScriptSource.External:
+				resolvedClass = tryLoadExternal();
+				if (resolvedClass == null && overrideMode == OverrideMode.ExternalFirst && hasInternal) {
+					resolvedClass = internalClass;
+					scriptInfo.isExternal = false;
+					scriptInfo.sourcePath = className;
+				}
+			case ScriptSource.Internal:
+				resolvedClass = internalClass;
+				if (resolvedClass != null) {
+					scriptInfo.isExternal = false;
+					scriptInfo.sourcePath = className;
+				}
+			case ScriptSource.None:
 		}
 		#end
 
@@ -354,7 +435,7 @@ class ScriptLoader {
 		return scriptInfo;
 	}
 
-	public static function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {
+	public function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {
 		var cachedScriptInfo = scriptCache.get(scriptName);
 		if (cachedScriptInfo == null) {
 			Log.warn("Unable to reload script that hasn't already been loaded: " + scriptName);
@@ -382,7 +463,7 @@ class ScriptLoader {
 		}
 	}
 
-	public static function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
+	public function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
 		var cachedScriptInfo = scriptCache.get(scriptName);
 
 		if (cachedScriptInfo != null) {
@@ -409,26 +490,26 @@ class ScriptLoader {
 				// ensure the scriptSourceDirectory appears as a directory by appending a trailing slash
 				scriptSourceDirectory = Path.addTrailingSlash(PathUtils.normalizePath(scriptSourceDirectory));
 
-				var haxeArgs = ["-lib", "hxcore"];//"-dce", "no"];
+				var haxeArgs = ["-lib", "hxcore"];
 
-				var scriptSourceAbsolutePath = if (!Path.isAbsolute(scriptSourceDirectory)) Path.join([Sys.getCwd(), PathUtils.normalizePath(scriptSourceDirectory)]) else
-					scriptSourceDirectory;
-				var classesInfoAbsolutePath = if (!Path.isAbsolute(classesInfoPath)) Path.join([Sys.getCwd(), PathUtils.normalizePath(classesInfoPath)]) else classesInfoPath;
-				classesInfoPath = if (!Path.isAbsolute(classesInfoPath)) PathUtils.relativePath(PathUtils.normalizePath(scriptSourceDirectory), PathUtils.normalizePath(classesInfoPath)) else classesInfoPath;
+				var scriptSourceAbsolutePath = PathUtils.toAbsolutePath(scriptSourceDirectory);
+				var classesInfoAbsolutePath = PathUtils.toAbsolutePath(classesInfoPath);
+				var outputAbsolutePath = PathUtils.toAbsolutePath(scriptDirectory);
+				var rootDir = PathUtils.getSourceRootParent(scriptSourceAbsolutePath);
+				// Ensure the root directory (parent of scripts) is on the classpath for package resolution.
+				if (rootDir != null && rootDir.length > 0) {
+					haxeArgs.push("-cp");
+					haxeArgs.push(rootDir);
+				}
 
 				// if this successfully compiles, the hotreload watcher will pick up the change and reload the script
 				// Use the new macro-based approach instead of temporary files
-				var result = ScriptCompiler.compileScriptInternal("", scriptSourceDirectory, scriptDirectory, classesInfoPath, "cppia", haxeArgs, scriptName);
+				var result = ScriptCompiler.compileScriptInternal(rootDir, scriptSourceAbsolutePath, outputAbsolutePath, classesInfoAbsolutePath, "cppia",
+					haxeArgs, scriptName);
 
 				if (result != 0) {
 					// If the compilation failed, the script on disk will be the old version.
-					// Should we call onLoaded(scriptName, null) if the compilation fails?
-					// Log.error("Failed to compile script: " + scriptName);
-					// cachedScriptInfo = scriptCache.get(scriptName);
-					// if (cachedScriptInfo != null && cachedScriptInfo.loadedCallback != null) {
-					//	cachedScriptInfo.loadedCallback(scriptName, null);
-					// }
-					onLoaded(scriptName, null);
+					Log.warn("Hot compile failed, keeping previous script: " + scriptName);
 					return;
 				}
 			});
@@ -442,6 +523,16 @@ class ScriptLoader {
 					Log.error("Reload Watcher: Failed to reload script file (null filename): " + scriptName);
 					return;
 				}
+				if (!FileSystem.exists(filename)) {
+					Log.warn("Reload Watcher: Script file missing, skipping reload: " + filename);
+					return;
+				}
+				var mtime = FileSystem.stat(filename).mtime.getTime();
+				if (cppiaLastReloadMtime.exists(scriptName) && cppiaLastReloadMtime.get(scriptName) == mtime) {
+					Log.debug("Reload Watcher: Skipping duplicate reload for " + scriptName);
+					return;
+				}
+				cppiaLastReloadMtime.set(scriptName, mtime);
 
 				Log.info("Reload Watcher: Reloading script file: " + filename);
 
@@ -472,7 +563,7 @@ class ScriptLoader {
 		return;
 	}
 
-	public static function unload(scriptName:String):Void {
+	public function unload(scriptName:String):Void {
 		if (scriptCache.exists(scriptName)) {
 			scriptCache.remove(scriptName);
 			Log.debug("Unloaded script: " + scriptName);
@@ -493,7 +584,7 @@ class ScriptLoader {
 		}
 	}
 
-	public static function dispose() {
+	public function dispose() {
 		scriptCache.clear();
 		#if (scriptable && sys)
 		for (watcher in cppiaFileWatchers) {

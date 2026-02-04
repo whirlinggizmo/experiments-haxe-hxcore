@@ -7,12 +7,13 @@ package hxcore.scripting;
 // import haxe.macro.Type.Ref;
 // import hxcore.util.TypeUtils;
 import hxcore.scripting.IScriptLoader;
-import hxcore.scripting.ScriptInfo;
+import hxcore.scripting.Types.ScriptInfo;
 import hxcore.events.EventEmitter;
 // import hxcore.events.EventEmitterTracker;
 import hxcore.logging.Log;
-import hxcore.scripting.ScriptContext;
+import hxcore.scripting.Types.ScriptContext;
 import hxcore.scripting.Script;
+import hxcore.scripting.ScriptRuntime;
 
 
 
@@ -33,6 +34,7 @@ class ScriptHost implements IScriptHost {
 	// private var _ctx:ScriptContext;
 	private var ctx:ScriptContext;
 	private var event:EventEmitter;
+	private var runtime:ScriptRuntime;
 
 	// public var event:EventEmitterTracker;
 	// public var event:EventEmitter;
@@ -49,7 +51,7 @@ class ScriptHost implements IScriptHost {
 	// we could just use Reflection every time, but this is more efficient (?)
 	private var dispatchEventFunc:(eventName:String, data:Dynamic) -> Void;
 
-	public function new() {
+	public function new(?runtime:ScriptRuntime) {
 		// this.scriptName = null;
 		this.script = null;
 
@@ -62,6 +64,7 @@ class ScriptHost implements IScriptHost {
 		// }
 		this.event = new EventEmitter();
 		this.ctx = {};
+		this.runtime = runtime != null ? runtime : ScriptRuntime.getDefault();
 
 		scriptCreated = false;
 		scriptLoaded = false;
@@ -98,7 +101,7 @@ class ScriptHost implements IScriptHost {
 	}
 
 	public function loadScript(scriptName:String, ?onCreatedCallback:ScriptHost->Void, ?onLoadedCallback:ScriptHost->Void) {
-		ScriptLoader.load(scriptName, (scriptName:String, loadedScriptInfo:ScriptInfo) -> {
+		runtime.load(scriptName, (scriptName:String, loadedScriptInfo:ScriptInfo) -> {
 			var isReload = (this.script != null);
 			if (loadedScriptInfo == null) {
 				if (isReload) {
@@ -129,6 +132,8 @@ class ScriptHost implements IScriptHost {
 					// unload the previous script
 					setScriptEnvironment();
 					this.script._baseUnload();
+
+					// TODO: Consider supporting an unload->reload stash to carry state explicitly (vs ctx-only).
 
 					// set the new script env and reload
 					this.script = loadedScriptInfo.script;

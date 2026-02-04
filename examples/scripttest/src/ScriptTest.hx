@@ -1,7 +1,7 @@
 package;
 
 import hxcore.util.FPSCounter;
-import hxcore.scripting.ScriptLoader;
+import hxcore.scripting.ScriptRuntime;
 import hxcore.ecs.Entity;
 import hxcore.ecs.EntityManager;
 import hxcore.logging.Log;
@@ -10,8 +10,9 @@ import hxcore.logging.Log;
 @:keep
 class ScriptTest {
 	private var quitFlag:Bool = false;
+	private var runtime:ScriptRuntime;
 
-	public function new() {}
+	public function new() {	}
 
 	public function init(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableHotReload:Bool = false) {
 		Log.info('Hello, World!');
@@ -23,16 +24,11 @@ class ScriptTest {
 		Log.debug('scriptSourceDirectory: ' + scriptSourceDirectory);
 		Log.debug('enableHotReload: ' + enableHotReload);
 
-		if (scriptDirectory != null && scriptDirectory.length > 0) {
-			ScriptLoader.enableExternalScripts(scriptDirectory);
-		}
+		runtime = ScriptRuntime.getDefault();
 
-		if (enableHotReload) {
-			if (scriptDirectory == null || scriptDirectory.length == 0) {
-				Log.error('Error: hot reload requires the script directory (for the compiled scripts)');
-				return;
-			}
-			ScriptLoader.enableHotReload();
+		if (scriptDirectory != null && scriptDirectory.length > 0) {
+			runtime.config.scriptOutputRoot = scriptDirectory;
+			runtime.config.externalEnabled = true;
 		}
 
 		if (scriptSourceDirectory != null && scriptSourceDirectory.length > 0) {
@@ -40,8 +36,19 @@ class ScriptTest {
 				Log.error('Error: hot compile requires the script directory (for the compiled scripts)');
 				return;
 			}
-			ScriptLoader.enableHotCompile(scriptSourceDirectory);
+			runtime.config.scriptSourceRoot = scriptSourceDirectory;
+			runtime.config.hotCompileEnabled = true;
 		}
+
+		if (enableHotReload) {
+			if (scriptDirectory == null || scriptDirectory.length == 0) {
+				Log.error('Error: hot reload requires the script directory (for the compiled scripts)');
+				return;
+			}
+			runtime.config.hotReloadEnabled = true;
+		}
+
+		runtime.applyConfig();
 	}
 
 	public function loadTest() {
@@ -92,7 +99,7 @@ class ScriptTest {
 		EntityManager.clear();
 
 		// shut down the script loader
-		ScriptLoader.dispose();
+		runtime.dispose();
 	}
 
 	/*
@@ -109,6 +116,7 @@ class ScriptTest {
 		}
 	 */
 	static function main() {
+		Log.setLevel(Info);
 		var scriptDirectory = null;
 		var scriptSourceDirectory = null;
 		var enableHotReload = false;

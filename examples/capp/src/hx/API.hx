@@ -1,6 +1,6 @@
 package;
 
-import hxcore.scripting.ScriptLoader;
+import hxcore.scripting.ScriptRuntime;
 import hxcore.ecs.Entity;
 import hxcore.ecs.EntityManager;
 import hxcore.ecs.EntityID;
@@ -12,21 +12,17 @@ import hxcore.util.FPSCounter;
 @:build(HaxeCBridge.expose())
 class API {
 	public function new() {}
+	private var runtime:ScriptRuntime;
 	
 
 	public function init(?scriptDirectory:String = null, ?scriptSourceDirectory:String = null, ?enableHotReload:Bool = false) {
 		Log.info('Hello, World!');
 
-		if (scriptDirectory != null && scriptDirectory.length > 0) {
-			ScriptLoader.enableExternalScripts(scriptDirectory);
-		}
+		runtime = ScriptRuntime.getDefault();
 
-		if (enableHotReload) {
-			if (scriptDirectory == null || scriptDirectory.length == 0) {
-				Log.error('Error: hot reload requires the script directory (for the compiled scripts)');
-				return;
-			}
-			ScriptLoader.enableHotReload();
+		if (scriptDirectory != null && scriptDirectory.length > 0) {
+			runtime.config.scriptOutputRoot = scriptDirectory;
+			runtime.config.externalEnabled = true;
 		}
 
 		if (scriptSourceDirectory != null && scriptSourceDirectory.length > 0) {
@@ -34,8 +30,19 @@ class API {
 				Log.error('Error: hot compile requires the script directory (for the compiled scripts)');
 				return;
 			}
-			ScriptLoader.enableHotCompile(scriptSourceDirectory);
+			runtime.config.scriptSourceRoot = scriptSourceDirectory;
+			runtime.config.hotCompileEnabled = true;
 		}
+
+		if (enableHotReload) {
+			if (scriptDirectory == null || scriptDirectory.length == 0) {
+				Log.error('Error: hot reload requires the script directory (for the compiled scripts)');
+				return;
+			}
+			runtime.config.hotReloadEnabled = true;
+		}
+
+		runtime.applyConfig();
 	}
 
 	private var quitFlag:Bool = false;
@@ -68,7 +75,7 @@ class API {
 		EntityManager.clear();
 
 		// shut down the script loader
-		ScriptLoader.dispose();
+		runtime.dispose();
 
 		Log.info('Goodbye, World!');
 	}

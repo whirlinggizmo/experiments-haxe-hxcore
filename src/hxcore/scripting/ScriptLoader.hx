@@ -1,77 +1,37 @@
 package hxcore.scripting;
 
 import hxcore.logging.Log;
-import hxcore.util.TypeUtils;
+import hxcore.scripting.ScriptResolution;
+import hxcore.scripting.Types.HotCompileScope;
+import hxcore.scripting.Types.ScriptInfo;
 
-class ScriptLoader {
-	/**
-	 * Loads a script by name for non-JS targets using Haxe reflection.
-	 * 
-	 * @param scriptName The name of the script to load.
-	 * @return A new instance of the script.
-	 */
-	private static var scriptCache:Map<String, Script> = new Map<String, Script>();
-	public static var scriptDirectory:String = "./scripts/";
-	public static var scriptSourceDirectory:String = "./src/";
-	private static var generatedScriptNamespace:String = "gen";
+class ScriptLoader implements IScriptLoader {
+	public function new() {}
 
-	public static function getGeneratedScriptNamespace():String {
-		return generatedScriptNamespace;
-	}
+	public function setOverrideMode(mode:ScriptResolution.OverrideMode):Void {}
+	public function setChangeDebounceMs(ms:Int):Void {}
+	public function setScriptDirectory(dir:String):Void {}
+	public function setScriptSourceDirectory(dir:String):Void {}
+	public function setExternalEnabled(enable:Bool, ?scriptDirectory:String):Void {}
+	public function setHotReloadEnabled(enable:Bool):Void {}
+	public function setHotCompileEnabled(enable:Bool, ?scriptSourceDirectory:String):Void {}
+	public function setHotCompileScope(scope:HotCompileScope):Void {}
+	public function tickWatchers():Void {}
 
-	public static function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
-		if (scriptCache.exists(scriptName)) {
-			//onLoaded(scriptName, scriptCache.get(scriptName));
-			return;
-		}
-
-		// TODO: do we want to include the script directory as the package, or add the script directory class path when building?
-		//var fullScriptName = scriptsRootDirectory + '.' + scriptName; 
-		var fullScriptName = scriptName;
-
-		var scriptClass = Type.resolveClass(fullScriptName);
-		if (scriptClass != null) {
-			// ensure it derives from Script
-			if (!TypeUtils.isDerivedFrom(scriptClass, hxcore.scripting.Script)) {
-				Log.error("Script " + scriptName + " does not derive from hxcore.scripting.Script");
-				if (onLoaded != null) {
-					onLoaded(scriptName, null); // Call the callback with the loaded instance 
-				}
-				return;
-			}
-
-			Log.debug('scriptClass: $scriptClass');
-			var script = Type.createInstance(scriptClass, []);
-
-			if (script == null) {
-				Log.error('Error creating script instance: ' + fullScriptName);
-				if (onLoaded != null) {
-					onLoaded(scriptName, null); // Call the callback with the loaded instance 
-				}
-				return;
-			}
-
-			// cache the script instance
-			scriptCache.set(scriptName, script);
-			script.scriptName = scriptName; 
-			script.scriptDirectory = scriptDirectory;
-			var scriptInfo = {
-				className: scriptName,
-				script: script,
-				loadedCallback: onLoaded,
-				isExternal: false,
-				sourcePath: scriptDirectory + '/' + scriptName + '.hx'
-			};
-			if (onLoaded != null) {
-				onLoaded(scriptName, scriptInfo); // Call the callback with the loaded instance
-			}
-			return;
-		} else {
-			Log.error('Unable to resolve script: ' + fullScriptName);
-			if (onLoaded != null) {
-				onLoaded(scriptName, null); // Call the callback with the loaded instance 
-			}
-			return;
+	public function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
+		Log.warn("ScriptLoader is not implemented for this target.");
+		if (onLoaded != null) {
+			onLoaded(scriptName, null);
 		}
 	}
+
+	public function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {
+		Log.warn("ScriptLoader is not implemented for this target.");
+		if (onLoaded != null) {
+			onLoaded(scriptName, null);
+		}
+	}
+
+	public function unload(scriptName:String):Void {}
+	public function dispose():Void {}
 }

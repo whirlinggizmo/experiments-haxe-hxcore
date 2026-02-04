@@ -129,6 +129,10 @@ class FileWatcher {
 		this.files.clear();
 	}
 
+	public function tick() {
+		scanDirectory();
+	}
+
 	private var currentFiles = new Map<String, Float>();
 
 	function scanDirectory(invokeCallbackOnChange:Bool = true) {
@@ -145,7 +149,7 @@ class FileWatcher {
 				if (FileSystem.isDirectory(fullPath)) {
 					processDirectory(fullPath);
 				} else {
-					var relativePath = PathUtils.relativePath(rootDirectory, fullPath);
+					var relativePath = PathUtils.relativePathSafe(rootDirectory, fullPath);
 					// Log.debug('Relative path: ${relativePath}');
 					if (!isIgnored(file, [ignoredFilesRegex]) && matchesFilter(relativePath)) {
 						var modifiedTime = FileSystem.stat(fullPath).mtime.getTime();
@@ -159,7 +163,7 @@ class FileWatcher {
 								callback(fullPath, Modified);
 							}
 						} else {
-							Log.info("Watching file: " + fullPath);
+							Log.debug("Watching file: " + fullPath);
 						}
 					}
 				}

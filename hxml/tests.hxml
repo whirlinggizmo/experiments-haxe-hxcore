@@ -1,0 +1,5 @@
+-lib utest
+-cp src
+-cp tests
+--main tests.RunTests
+--interp

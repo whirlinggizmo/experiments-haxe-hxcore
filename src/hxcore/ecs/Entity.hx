@@ -2,7 +2,7 @@ package hxcore.ecs;
 
 import hxcore.ecs.EntityID.EIDGenerator;
 import hxcore.scripting.ScriptHost;
-import hxcore.scripting.ScriptContext;
+import hxcore.scripting.Types.ScriptContext;
 import hxcore.events.EventEmitter;
 import hxcore.logging.Log;
 

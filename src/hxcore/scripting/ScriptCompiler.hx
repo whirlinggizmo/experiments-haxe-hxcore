@@ -23,7 +23,7 @@ class ScriptCompiler {
 
 	public static function setGeneratedScriptNamespace(namespace:String):Void {
 		generatedScriptNamespace = namespace;
-		Log.info('Generated script namespace set to: $namespace');
+		Log.debug('Generated script namespace set to: $namespace');
 	}
 	/**
 	 * Compiles a script using macro-based namespace injection instead of temporary files.
@@ -45,7 +45,11 @@ class ScriptCompiler {
 			return -1;
 		}
 
-		rootDir = rootDir ?? Sys.getCwd();
+		if (rootDir == null || rootDir.length == 0) {
+			rootDir = Sys.getCwd();
+		} else if (!Path.isAbsolute(rootDir)) {
+			rootDir = PathUtils.normalizePath(Path.join([Sys.getCwd(), rootDir]));
+		}
 		rootDir = PathUtils.normalizePath(rootDir);
 		sourceDir = PathUtils.makeAbsolutePath(rootDir, sourceDir);
 		outputDir = PathUtils.makeAbsolutePath(rootDir, outputDir);
@@ -90,10 +94,6 @@ class ScriptCompiler {
 		if (!FileSystem.exists(hxFilePath) || FileSystem.isDirectory(hxFilePath)) {
 			Log.error('Class file not found: $hxFilePath');
 			return -1;
-		}
-
-		if (FileSystem.exists(outputFilePath)) {
-			FileSystem.deleteFile(outputFilePath);
 		}
 
 		if (!FileSystem.exists(outputFileDir)) {
@@ -180,8 +180,9 @@ class ScriptCompiler {
 		args.push('hxcore.macros.NamespaceInjector.setNative(${setNativeMacroArgs})');
 	 
 		// the target (cppia, js, etc)
+		// output path must align with outputDir to avoid loader/watch mismatches
 		args.push('--${target}');
-		args.push('${generatedScriptNamespace}/${classNameAsPath}.${target}');
+		args.push(outputFilePath);
 		
 		// and the class to compile
 		args.push(className);
@@ -304,7 +305,9 @@ class ScriptCompiler {
 			targetType = targetType.substring(1);
 		}
 
-		rootDir = rootDir ?? Sys.getCwd();
+		if (rootDir == null || rootDir.length == 0 || rootDir == "." || rootDir == "./") {
+			rootDir = Sys.getCwd();
+		}
 		haxeArgs = haxeArgs ?? [];
 
 		var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, targetType, haxeArgs, className);

@@ -4,8 +4,7 @@ package hxcore.macros;
 // it uses regex patterns to match classes to filter out
 import haxe.macro.Context;
 import haxe.macro.Expr;
-import StringTools;
-import EReg;
+import hxcore.util.ExportClassesInfoFilter;
 
 class ExportClassesInfo {
 	/**
@@ -15,37 +14,10 @@ class ExportClassesInfo {
 	 * @param regexPatterns Array of regex patterns to match classes to filter out
 	 */
 	macro public static function filterToFile(exportClassesInfoPath:String, outputPath:String, regexPatterns:Array<String>):Expr {
-		// read the export_classes.info file, line at a time.
-		var lines = sys.io.File.getContent(exportClassesInfoPath).split("\n");
-
-		// filter out the given classes, using regex patterns
-		var filteredLines = [];
-		for (line in lines) {
-			var shouldKeep = true;
-
-			// Skip empty lines
-			if (StringTools.trim(line) == "") {
-				filteredLines.push(line);
-				continue;
-			}
-
-			// Check if line matches any exclusion pattern using regex
-			for (pattern in regexPatterns) {
-				var regex = new EReg(pattern, "");
-				if (regex.match(line)) {
-					shouldKeep = false;
-					break;
-				}
-			}
-
-			// Keep the line if it doesn't match any pattern
-			if (shouldKeep) {
-				filteredLines.push(line);
-			}
-		}
-
-		// save the filtered export_classes.info file
-		sys.io.File.saveContent(outputPath, filteredLines.join("\n"));
+		// read the export_classes.info file
+		var content = sys.io.File.getContent(exportClassesInfoPath);
+		var filtered = ExportClassesInfoFilter.filterContent(content, regexPatterns);
+		sys.io.File.saveContent(outputPath, filtered);
 
 		return macro {
 			return outputPath;

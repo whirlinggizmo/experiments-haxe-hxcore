@@ -33,7 +33,7 @@ enum abstract LogLevel(Int) from Int to Int {
 
 	public static function setWorkspaceRoot(root:String):Void {
 		workspaceRoot = Path.normalize(root);
-		trace('workspaceRoot: $workspaceRoot');
+		//trace('workspaceRoot: $workspaceRoot');
 	}
 
 	public function format(s:String, color:Bool = true, ?pos:haxe.PosInfos, ?tag:String):String {
@@ -136,10 +136,10 @@ class Log {
 			#if sys
 			var workspaceRootEnv = Sys.environment().get('HXCORE_WORKSPACE_FOLDER');
 			if (workspaceRootEnv != null) {
-				trace('workspaceRootEnv: $workspaceRootEnv');
+				//trace('workspaceRootEnv: $workspaceRootEnv');
 				LogLevel.setWorkspaceRoot(workspaceRootEnv);
 			} else {
-				trace('no workspaceRootEnv, using Sys.getCwd()');
+				//trace('no workspaceRootEnv, using Sys.getCwd()');
 				LogLevel.setWorkspaceRoot(Sys.getCwd());
 			}
 			#end

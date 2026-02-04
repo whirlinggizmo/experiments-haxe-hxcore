@@ -6,7 +6,7 @@ package hxcore.scripting;
 // import hxcore.events.EventEmitterTracker;
 import hxcore.events.EventEmitter.EventListener;
 import hxcore.logging.Log;
-import hxcore.scripting.ScriptContext;
+import hxcore.scripting.Types.ScriptContext;
 import hxcore.scripting.ScriptHost;
 import hxcore.util.PathUtils;
 import haxe.io.Path;

@@ -1,5 +1,7 @@
 package hxcore.scripting;
 
+typedef ScriptContext = Dynamic;
+
 typedef LoadedCallback = (scriptName:String, scriptInfo:ScriptInfo) -> Void;
 
 typedef ScriptInfo = {
@@ -8,4 +10,9 @@ typedef ScriptInfo = {
 	var ?loadedCallback:LoadedCallback;
 	var ?isExternal:Bool;
 	var ?sourcePath:String;
+}
+
+enum HotCompileScope {
+	ScriptOnly;
+	SourceRoot;
 }

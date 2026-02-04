@@ -61,6 +61,24 @@ class PathUtils {
 		return result;
 	}
 
+	/**
+	 * Like relativePath(), but coerces relative inputs to absolute using CWD.
+	 * This avoids mismatches when callers pass a relative root but compare against absolute file paths.
+	 */
+	public static function relativePathSafe(relativeTo:String, path:String):String {
+		var base = relativeTo;
+		var target = path;
+
+		if (!Path.isAbsolute(base)) {
+			base = Path.join([Sys.getCwd(), base]);
+		}
+		if (!Path.isAbsolute(target)) {
+			target = Path.join([Sys.getCwd(), target]);
+		}
+
+		return relativePath(base, target);
+	}
+
 	public static function ensureDirectory(path:String):String {
 		path = normalizePath(path);
 		if (FileSystem.exists(path)) {
@@ -118,14 +136,50 @@ class PathUtils {
 		return Path.normalize(path);
 	}
 
+	public static function stripTrailingSlash(path:String):String {
+		if (path == null) {
+			return path;
+		}
+		return Path.removeTrailingSlashes(path);
+	}
+
+	/**
+	 * Resolve a path to absolute using CWD when it's relative.
+	 */
+	public static function toAbsolutePath(path:String):String {
+		if (path == null || path.length == 0) {
+			return path;
+		}
+		var normalized = normalizePath(path);
+		if (Path.isAbsolute(normalized)) {
+			return normalized;
+		}
+		return normalizePath(Path.join([Sys.getCwd(), normalized]));
+	}
+
+	/**
+	 * Get parent directory for a source root (e.g. /proj/scripts -> /proj).
+	 */
+	public static function getSourceRootParent(sourceDir:String):String {
+		var absolute = toAbsolutePath(sourceDir);
+		if (absolute == null || absolute.length == 0) {
+			return Sys.getCwd();
+		}
+		var trimmed = stripTrailingSlash(absolute);
+		return Path.directory(trimmed);
+	}
+
 	public static function makeAbsolutePath(base:String, path:String):String {
 		if (path == null || path.length == 0) {
 			Log.error('Path is not set: $path');
 			return base;
 		}
-		if (base == null || base.length == 0 || !Path.isAbsolute(base)) {
-			Log.error('Base path is not absolute: $base');
+		if (base == null || base.length == 0) {
+			Log.error('Base path is not set: $base');
 			return path;
+		}
+		if (!Path.isAbsolute(base)) {
+			base = normalizePath(Path.join([Sys.getCwd(), base]));
 		}
 
 		if (Path.isAbsolute(path)) {

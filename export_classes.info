@@ -1,3 +1,50 @@
+class utest.utils.Print
+class utest.utils.Misc
+class utest.utils.AsyncUtils
+class utest.utils.AccessoriesUtils
+class utest.ui.text.PrintReport
+class utest.ui.text.PlainTextReport
+class utest.ui.common.ResultStats
+class utest.ui.common.ResultAggregator
+class utest.ui.common.ReportTools
+class utest.ui.common.PackageResult
+interface utest.ui.common.IReport
+enum utest.ui.common.SuccessResultsDisplayMode
+enum utest.ui.common.HeaderDisplayMode
+class utest.ui.common.FixtureResult
+class utest.ui.common.ClassResult
+class utest.ui.Report
+class utest.TestResult
+class utest.TestFixture
+class utest.AccessoryName
+class utest._Runner.ITestRunner
+class utest.Runner
+class utest._IgnoredFixture.IgnoredFixture_Impl_
+class utest.ITestHandler
+class utest.TestHandler
+class utest.Notifier
+class utest.Dispatcher
+enum utest._Dispatcher.EventException
+class utest.Async
+enum utest.Assertation
+class utest.Assert
+class tests.util.PathUtilsRelativePathTest
+class tests.util.DebouncedQueueTest
+class tests.scripting.ScriptResolutionTest
+class tests.scripting.ScriptChangeCoalescerTest
+class tests.scripting.RuntimeIntegrationTest
+class tests.scripting._RuntimeIntegrationTest.TestLoader
+class tests.scripting.RuntimeConfigIntegrationTest
+class tests.scripting._RuntimeConfigIntegrationTest.FakeLoader
+class tests.scripting.FakeScriptTwo
+class tests.scripting.FakeScript
+class tests.scripting.ExportClassesInfoFilterTest
+class tests.scripting.DummyTest
+class tests.scripting.CppiaOverrideIntegrationTest
+class tests.scripting.CppiaHcrIntegrationTest
+class utest.Test
+interface utest.ITest
+class tests.RunTests
 class sys.thread.Tls
 class sys.thread._Thread.Thread_Impl_
 class sys.thread.Semaphore
@@ -5,6 +52,7 @@ class sys.thread.NoEventLoopException
 class sys.thread.Lock
 class sys.thread._EventLoop.RegularEvent
 enum sys.thread.NextEventTime
+class sys.thread.Deque
 class sys.thread.Condition
 class sys.ssl.Socket
 class sys.ssl._Socket.SocketOutput
@@ -35,35 +83,10 @@ interface sys.db.ResultSet
 class sys.db._Mysql.D
 interface sys.db.Connection
 class sys.FileSystem
-class scripts.Test
-class hxcpp.debug.jsonrpc.eval.Tools
-enum hxcpp.debug.jsonrpc.eval.Token
-class hxcpp.debug.jsonrpc.eval.Interp
-enum hxcpp.debug.jsonrpc.eval._Interp.Stop
-enum hxcpp.debug.jsonrpc.eval.FieldKind
-enum hxcpp.debug.jsonrpc.eval.FieldAccess
-enum hxcpp.debug.jsonrpc.eval.ModuleDecl
-enum hxcpp.debug.jsonrpc.eval.Error
-enum hxcpp.debug.jsonrpc.eval.CType
-enum hxcpp.debug.jsonrpc.eval.Expr
-enum hxcpp.debug.jsonrpc.eval.Const
-class hxcpp.debug.jsonrpc.VariablesPrinter
-enum hxcpp.debug.jsonrpc.Value
-enum hxcpp.debug.jsonrpc.VarType
-class hxcpp.debug.jsonrpc.Server
-class sys.thread.Deque
-class hxcpp.debug.jsonrpc.eval.Parser
-class hxcpp.debug.jsonrpc._Server.References
-class hxcpp.debug.jsonrpc.Protocol
-class hxcpp.debug.jsonrpc._Protocol.NotificationMethod_Impl_
-class hxcpp.debug.jsonrpc._Protocol.RequestMethod_Impl_
-class hxcpp.debug.jsonrpc.Macro
-class hxcore.util.UpdateHandler
 class hxcore.util.TypeUtils
 class hxcore.util.PathUtils
-class hxcore.util.MathUtils
 class hxcore.util.Glob
-class hxcore.util.FPSCounter
+class hxcore.util.ExportClassesInfoFilter
 class hxcore.util.DebouncedQueue
 enum hxcore.scripting.HotCompileScope
 class hxcore.scripting.ScriptWatcher
@@ -85,15 +108,13 @@ class hxcore.io._FileWatcher.FileWatcher_Fields_
 class hxcore.io.FileWatcher
 enum hxcore.io.FileChangeEvent
 class hxcore.events.EventEmitter
-class hxcore.ecs.EntityManager
-class hxcore.ecs.EIDGenerator
-class hxcore.ecs.Entity
 class haxe.zip.Uncompress
 enum haxe.zip.FlushMode
 class haxe.zip.Compress
 class haxe.xml.Printer
 class haxe.xml.Parser
 class haxe.xml.XmlParserException
+class haxe.rtti.Meta
 enum haxe.macro.TypedExprDef
 enum haxe.macro.FieldAccess
 enum haxe.macro.ModuleType
@@ -152,7 +173,6 @@ class haxe.format.JsonPrinter
 class haxe.format.JsonParser
 class haxe.exceptions.NotImplementedException
 class haxe.exceptions.PosException
-class haxe.ds._GenericStack.GenericStackIterator_hxcpp_debug_jsonrpc_eval_Token
 class haxe.ds.WeakMap
 class haxe.ds._Vector.Vector_Impl_
 class haxe.ds.StringMap
@@ -167,11 +187,9 @@ class haxe.ds.List
 class haxe.ds.IntMap
 class haxe.ds._HashMap.HashMapData
 class haxe.ds._HashMap.HashMap_Impl_
-class haxe.ds.GenericStack_hxcpp_debug_jsonrpc_eval_Token
 class haxe.ds.GenericStack
 class haxe.ds._GenericStack.GenericStackIterator
 class haxe.ds.GenericCell
-class haxe.ds.GenericCell_hxcpp_debug_jsonrpc_eval_Token
 class haxe.ds.EnumValueMap
 class haxe.ds.TreeNode
 class haxe.ds.BalancedTree
@@ -245,7 +263,6 @@ class StringTools
 class haxe.SysTools
 class StringBuf
 class Std
-class ScriptTest
 class Reflect
 class Lambda
 class IntIterator
@@ -369,15 +386,13 @@ file /home/rknopf/toolchains/haxe/current/std/haxe/iterators/StringIterator.hx /
 file /home/rknopf/toolchains/haxe/current/std/haxe/iterators/StringIteratorUnicode.hx /home/rknopf/toolchains/haxe/current/std/haxe/iterators/StringIteratorUnicode.hx
 file /home/rknopf/toolchains/haxe/current/std/haxe/iterators/StringKeyValueIterator.hx /home/rknopf/toolchains/haxe/current/std/haxe/iterators/StringKeyValueIterator.hx
 file /home/rknopf/toolchains/haxe/current/std/haxe/macro/Expr.hx /home/rknopf/toolchains/haxe/current/std/haxe/macro/Expr.hx
+file /home/rknopf/toolchains/haxe/current/std/haxe/rtti/Meta.hx /home/rknopf/toolchains/haxe/current/std/haxe/rtti/Meta.hx
 file /home/rknopf/toolchains/haxe/current/std/haxe/xml/Parser.hx /home/rknopf/toolchains/haxe/current/std/haxe/xml/Parser.hx
 file /home/rknopf/toolchains/haxe/current/std/haxe/xml/Printer.hx /home/rknopf/toolchains/haxe/current/std/haxe/xml/Printer.hx
 file /home/rknopf/toolchains/haxe/current/std/sys/net/Address.hx /home/rknopf/toolchains/haxe/current/std/sys/net/Address.hx
 file /home/rknopf/toolchains/haxe/current/std/sys/thread/EventLoop.hx /home/rknopf/toolchains/haxe/current/std/sys/thread/EventLoop.hx
 file /home/rknopf/toolchains/haxe/current/std/sys/thread/NoEventLoopException.hx /home/rknopf/toolchains/haxe/current/std/sys/thread/NoEventLoopException.hx
-file ScriptTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/src/ScriptTest.hx
-file hxcore/ecs/Entity.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/Entity.hx
-file hxcore/ecs/EntityID.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/EntityID.hx
-file hxcore/ecs/EntityManager.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/ecs/EntityManager.hx
+file RunTests.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/RunTests.hx
 file hxcore/events/EventEmitter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/events/EventEmitter.hx
 file hxcore/io/FileWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/io/FileWatcher.hx
 file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
@@ -386,21 +401,49 @@ file hxcore/scripting/ScriptChangeCoalescer.hx /home/rknopf/projects/whirlinggiz
 file hxcore/scripting/ScriptCompiler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptCompiler.hx
 file hxcore/scripting/ScriptConfig.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptConfig.hx
 file hxcore/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptHost.hx
-file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/hxcore/scripting/ScriptLoader.cpp.hx
+file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxcore/scripting/ScriptLoader.cpp.hx
 file hxcore/scripting/ScriptResolution.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptResolution.hx
 file hxcore/scripting/ScriptRuntime.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptRuntime.hx
 file hxcore/scripting/ScriptWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptWatcher.hx
 file hxcore/util/DebouncedQueue.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/DebouncedQueue.hx
-file hxcore/util/FPSCounter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/FPSCounter.hx
+file hxcore/util/ExportClassesInfoFilter.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/ExportClassesInfoFilter.hx
 file hxcore/util/Glob.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/Glob.hx
-file hxcore/util/MathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/MathUtils.hx
 file hxcore/util/PathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/PathUtils.hx
 file hxcore/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/TypeUtils.hx
-file hxcore/util/UpdateHandler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/UpdateHandler.hx
-file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx
-file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx
-file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/VariablesPrinter.hx
-file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx
-file hxcpp/debug/jsonrpc/eval/Parser.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Parser.hx
-file hxcpp/debug/jsonrpc/eval/Tools.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Tools.hx
-file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/scripts/Test.hx
+file scripting/CppiaHcrIntegrationTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/CppiaHcrIntegrationTest.hx
+file scripting/CppiaOverrideIntegrationTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/CppiaOverrideIntegrationTest.hx
+file scripting/DummyTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/DummyTest.hx
+file scripting/ExportClassesInfoFilterTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/ExportClassesInfoFilterTest.hx
+file scripting/FakeScript.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/FakeScript.hx
+file scripting/FakeScriptTwo.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/FakeScriptTwo.hx
+file scripting/RuntimeConfigIntegrationTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/RuntimeConfigIntegrationTest.hx
+file scripting/RuntimeIntegrationTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/RuntimeIntegrationTest.hx
+file scripting/ScriptChangeCoalescerTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/ScriptChangeCoalescerTest.hx
+file scripting/ScriptResolutionTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/ScriptResolutionTest.hx
+file utest/Assert.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Assert.hx
+file utest/Async.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Async.hx
+file utest/Dispatcher.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Dispatcher.hx
+file utest/ITestHandler.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ITestHandler.hx
+file utest/IgnoredFixture.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/IgnoredFixture.hx
+file utest/Runner.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Runner.hx
+file utest/Test.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Test.hx
+file utest/TestData.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/TestData.hx
+file utest/TestFixture.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/TestFixture.hx
+file utest/TestHandler.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/TestHandler.hx
+file utest/TestResult.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/TestResult.hx
+file utest/ui/Report.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/Report.hx
+file utest/ui/common/ClassResult.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/common/ClassResult.hx
+file utest/ui/common/FixtureResult.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/common/FixtureResult.hx
+file utest/ui/common/PackageResult.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/common/PackageResult.hx
+file utest/ui/common/ReportTools.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/common/ReportTools.hx
+file utest/ui/common/ResultAggregator.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/common/ResultAggregator.hx
+file utest/ui/common/ResultStats.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/common/ResultStats.hx
+file utest/ui/text/PlainTextReport.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/text/PlainTextReport.hx
+file utest/ui/text/PrintReport.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/ui/text/PrintReport.hx
+file utest/utils/AccessoriesUtils.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/utils/AccessoriesUtils.hx
+file utest/utils/AsyncUtils.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/utils/AsyncUtils.hx
+file utest/utils/Misc.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/utils/Misc.hx
+file utest/utils/Print.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/utils/Print.hx
+file utest/utils/TestBuilder.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/utils/TestBuilder.hx
+file util/DebouncedQueueTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/util/DebouncedQueueTest.hx
+file util/PathUtilsRelativePathTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/util/PathUtilsRelativePathTest.hx

@@ -94,6 +94,7 @@ example/gen
 example/bin
 example/out
 build
+out/tests-cpp/
 
 # Nuxt.js build / generate output
 .nuxt
@@ -142,5 +143,3 @@ stats.html
 
 # heaps resource cache
 .tmp
-
-
