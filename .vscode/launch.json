@@ -18,7 +18,18 @@
             //    "--scriptDir", "${workspaceFolder}/example/dist/scripts"
             // ]
             // so instead, we use a shell script to launch it:
-            "program": "${workspaceFolder}/examples/scripttest/launch.sh",    
+            //"program": "${workspaceFolder}/examples/scripttest/launch.sh",    
+
+            // 03Feb2026:  Vendored the extension and added support for cwd and args.
+            "program": "${workspaceFolder}/example/dist/scripttest/ScriptTest",
+            "cwd": "${workspaceFolder}/example/out/scripttest",
+            "args": [
+               "--rootDir", "${workspaceFolder}/example",
+               "--sourceDir", "${workspaceFolder}/example/scripts",
+               "--scriptDir", "${workspaceFolder}/example/dist/scripts"
+            ]
+
+
         },
         {
             "name": "Launch SystemTest",

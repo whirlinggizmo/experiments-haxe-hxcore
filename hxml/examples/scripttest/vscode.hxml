@@ -1,0 +1,16 @@
+# just to keep the lsp happy in vscode, don't actually try to compile with it
+
+-lib hxcore
+-cp src
+
+-D scriptable 
+
+-D HXCPP_M64
+-D HXCPP_CATCH_SEGV
+-D hxcpp_smart_strings
+
+--main ScriptTest
+
+# include the compiled in scripts 
+scripts.Test
+

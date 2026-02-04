@@ -14,6 +14,7 @@
 
 
 -cpp out/lib
+-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
 -D static_link
 --main API
 -D HAXE_OUTPUT_FILE=libhxcore
@@ -48,5 +49,3 @@ scripts.Test
 
 # just tidying up
 #--cmd rm export_classes.info
-
-

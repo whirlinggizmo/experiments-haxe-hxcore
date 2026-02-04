@@ -1,0 +1,69 @@
+<!-- 
+NOTE:
+This is a patch to the git version of hxcpp and it's use of zlib (hxcpp > 4.3.2)
+
+`src/hx/zip/zlib/Build.xml` lists `hxcpp_zlib_impl` then `zlib_sources`, and `src/hx/zip/Build.xml`
+only adds `hxcpp_zip_api`. We need the final link order to be `hxcpp_zip_api` -> `hxcpp_zlib_impl`
+-> `zlib_sources` so the zip API resolves to our zlib implementation first and avoids undefined
+symbols or accidentally pulling in a system zlib with incompatible flags. If needed, add this to build.hxml:
+
+-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
+
+TODO:  Submit a PR from our vendor/hxcpp branch that addresses this correctly
+-->
+
+<xml>
+
+  <pragma once="true" />
+
+  <set name="ZLIB_DIR" value="${HXCPP}/project/thirdparty/zlib-1.3.1"/>
+  <set name="ZLIB_IMPL_DIR" value="${HXCPP}/src/hx/zip/zlib"/>
+
+  <files id="zlib_sources">
+    <cache value="true" asLibrary="true" />
+    <addTwice />
+
+    <compilerflag value="-I${ZLIB_DIR}"/>
+    <compilerflag value="-DSTDC" unless="windows" />
+    <compilerflag value="-DHAVE_UNISTD_H" unless="windows" />
+
+    <!-- HXCPP_LINK_NO_ZLIB may be set too late, so use filterout as well. -->
+    <file name="${ZLIB_DIR}/adler32.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/compress.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/crc32.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/deflate.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/gzclose.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/gzlib.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/gzread.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/gzwrite.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/infback.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/inffast.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/inflate.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/inftrees.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/trees.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/uncompr.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+    <file name="${ZLIB_DIR}/zutil.c" filterout="HXCPP_LINK_NO_ZLIB" tags="" />
+  </files>
+
+  <files id="hxcpp_zlib_impl" >
+    <depend files="hxcpp-depends"/>
+    <depend name="${ZLIB_IMPL_DIR}/Build.xml" dateOnly="true" />
+    <depend name="${ZLIB_IMPL_DIR}/ZLibCompress.hpp"/>
+    <depend name="${ZLIB_IMPL_DIR}/ZLibUncompress.hpp"/>
+
+    <cache value="true" asLibrary="true" />
+    <addTwice />
+
+    <compilerflag value="-I${ZLIB_DIR}"/>
+    <compilerflag value="-I${ZLIB_IMPL_DIR}"/>
+
+    <file name="${ZLIB_IMPL_DIR}/ZLibUncompress.cpp"/>
+    <file name="${ZLIB_IMPL_DIR}/ZLibCompress.cpp"/>
+  </files>
+
+  <target id="haxe">
+    <files id="hxcpp_zlib_impl" />
+    <files id="zlib_sources" unless="HXCPP_LINK_NO_ZLIB"/>
+  </target>
+
+</xml>

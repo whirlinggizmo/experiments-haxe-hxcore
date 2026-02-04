@@ -1,3 +1,0 @@
-# build the flecstest app
---cwd examples/flecstest
-build.hxml

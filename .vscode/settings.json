@@ -1,15 +1,10 @@
 {
     "files.associations": {
-        "*.nimble": "nimble",
-        "*.unused": "c",
-        "flecs_wrapper_system.h": "c",
-        "flecs_wrapper_entity.h": "c",
-        "flecs_wrapper_event.h": "c",
-        "flecs_wrapper_component.h": "c"
+        "*.nimble": "nimble"
     },
     "haxe.configurations": [
         [
-          "examples/scripttest/vscode.hxml"
+          "hxml/vscode.hxml"
         ],
       
     ],
@@ -19,7 +14,7 @@
             "command": "haxe",
             "args": [
                 //"--cwd", "examples/scripttest",
-                "build.scripttest.hxml"
+                "examples/scripttest/build.hxml"
             ],
             "clearOutput": true,
             "globMatch": "examples/scripttest/src/**/*.hx",

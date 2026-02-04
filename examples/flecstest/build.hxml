@@ -10,6 +10,8 @@
 # enable scripting since we are a cppia host
 #-D scriptable 
 
+-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
+
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV
 -D hxcpp_smart_strings
@@ -34,5 +36,3 @@
 
 
 --cmd echo "Build of FlecsTest complete."
-
-

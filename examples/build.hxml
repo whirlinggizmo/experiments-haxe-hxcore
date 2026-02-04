@@ -1,8 +1,5 @@
 --library hxcore
 
---cwd examples
---next
-
 # build the scripttest app
 --cwd scripttest
 build.hxml
@@ -51,5 +48,3 @@ build.hxml
 #--cmd ./ScriptTest --sourceDir ../scripts --scriptDir ./scripts --hotReload
 # ...or don't include the source directory and the hot compile won't be enabled
 #--cmd ./dist/scripttest/ScriptTest -scriptDir scripts
-
---cmd echo "Done!"

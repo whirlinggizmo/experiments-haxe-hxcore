@@ -1,7 +1,0 @@
-examples/capp/clean.hxml
-examples/scripttest/clean.hxml
-examples/flecstest/clean.hxml
-examples/systemtest/clean.hxml
-
---cmd haxelib run hxcpp cache clear
-

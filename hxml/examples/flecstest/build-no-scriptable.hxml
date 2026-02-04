@@ -10,6 +10,8 @@
 # WIP: ObservableCallback (works with RawPointer, but that doesn't work with scriptable?)
 #-D scriptable 
 
+-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
+
 -D HXCPP_M64
 -D HXCPP_CATCH_SEGV
 -D hxcpp_smart_strings
@@ -33,5 +35,3 @@
 #--cmd cp out/FlecsTest dist/FlecsTest
 --cmd echo ""
 --cmd echo "Build complete."
-
-

@@ -1,0 +1,16 @@
+--library hxcore
+--run hxcore.scripting.ScriptCompiler
+--target cppia
+--sourceDir scripts
+--outputDir dist/app/scripts
+--classesInfo export_classes.info
+
+# Usage examples:
+# haxe hxml/examples/capp/compile.script.file.hxml --file ui/Button.hx
+# haxe hxml/examples/capp/compile.script.file.hxml --file game/player/Player.hx  
+# haxe hxml/examples/capp/compile.script.file.hxml --file Test.hx
+# haxe hxml/examples/capp/compile.script.file.hxml --class Test
+# haxe hxml/examples/capp/compile.script.file.hxml --help
+
+# Leave the --file dangling so we can add one on the command line
+--file 

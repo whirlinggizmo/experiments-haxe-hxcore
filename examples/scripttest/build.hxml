@@ -16,6 +16,17 @@
 -cp src
 -cpp out
 
+# We override hxcpp zlib config so native link order is: hxcpp_zip_api -> hxcpp_zlib_impl -> zlib_sources.
+# This split landed in hxcpp commit 0b59d98f ("Typed zip" #1277). In hxcpp's Build.xml today,
+# `src/hx/zip/zlib/Build.xml` lists `hxcpp_zlib_impl` then `zlib_sources`, and `src/hx/zip/Build.xml`
+# only adds `hxcpp_zip_api`. We need the final link order to be `hxcpp_zip_api` -> `hxcpp_zlib_impl`
+# -> `zlib_sources` so the zip API resolves to our zlib implementation first and avoids undefined
+# symbols or accidentally pulling in a system zlib with incompatible flags.
+
+# NOTE:  We've vendored the hxcpp library and made the changes locally. We should probably submit a PR...
+# but in the meantime, our hack isn't necessary
+#-D HXCPP_ZIP_XML=/home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxml/hxcpp_zlib_override.xml
+
 
 # enable cppia
 -D scriptable 
@@ -62,7 +73,7 @@ scripts.Test
 # compile the Test script
 # We could also call "compile.script.hxml Test" from this hxml, but that sends *everything* after the call to the hxml as args to ScriptCompiler (including --next, --cmd, etc)
 # Instead, we'll invoke the macro directly.
-# BTW:  From the command line, you can rebuild the script with "haxe build.script.hxml Test", in case you don't have the hot-compile feature enabled.
+# BTW:  From the command line, you can rebuild the script with "haxe hxml/examples/scripttest/compile.script.class.hxml Test", in case you don't have the hot-compile feature enabled.
 
 #-lib hxcore
 #--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', 'cppia', [], 'Test')

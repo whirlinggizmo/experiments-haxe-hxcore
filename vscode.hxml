@@ -1,8 +1,17 @@
-#--library hxcore
--cp src
--cp examples/capp/src/hx
--cp examples/scripttest/src
+# don't actually compile with this, it's here to fend off the lsp issues with package namespaces
 
---cpp bin/cpp
--D scriptable
+#--library hxcore
+#-cp src
+#-cp examples/capp/src/hx
+#-cp examples/scripttest/src
+#-cp examples/scripttest
+#-cp examples/systemtest
+
+-cp src
+-cp examples/flecstest/src
+-cp examples/scripttest/src
+-cp examples/systemtest/src
+-cp examples/capp/src/hx
+
+#-D scriptable
 --no-output

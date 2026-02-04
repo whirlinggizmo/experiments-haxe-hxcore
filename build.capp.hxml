@@ -1,9 +1,0 @@
-# build the c app
---cwd examples/capp
-
-# make vscode happy
---library hxcore
-
-build.hxml
-
-

@@ -1,0 +1,53 @@
+--library hxcore
+
+--cwd examples
+--next
+
+# build the scripttest app
+--cwd scripttest
+build.hxml
+--next
+
+# build the Test script
+-lib hxcore
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'dist/scripts', '', 'cppia', [], 'scripts.Test')
+--next
+# TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
+--cwd ../
+--next
+
+# build the systemtest app
+--cwd systemtest
+build.hxml
+--next
+# TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
+--cwd ../
+--next
+
+# build the c app 
+--cwd capp
+build.hxml
+--next
+# TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
+--cwd ../
+--next
+
+# build the flecstest app
+--cwd flecstest
+build.hxml
+--next
+# TODO: investigate why cwd doesn't reset between --next.  As it stands now, it persists and we have to navigate back to the examples dir
+--cwd ../
+--next
+
+# Launch the binary
+# Any command line relative paths are relative to the app directory (alternatively, provide absolute paths)
+# By including the source directory (--sourceDir), the scripts will be automatically compiled when the .hx file changes
+# Note: This spawns a process that runs haxe to compile the scripts (similar command line as build.script.hxml).  
+# TODO: Not tested in anything other than linux.  
+
+#--cwd scripttest/dist
+#--cmd echo "Running ScriptTest..."
+#--cmd ./ScriptTest --sourceDir ../scripts --scriptDir ./scripts --hotReload
+# ...or don't include the source directory and the hot compile won't be enabled
+#--cmd ./dist/scripttest/ScriptTest -scriptDir scripts
