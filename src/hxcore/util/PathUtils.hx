@@ -183,7 +183,7 @@ class PathUtils {
 		}
 
 		if (Path.isAbsolute(path)) {
-			Log.warn('Path is already absolute: $path');
+			Log.debug('Path is already absolute: $path');
 			return path;
 		}
 
