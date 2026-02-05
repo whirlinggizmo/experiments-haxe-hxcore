@@ -7,6 +7,8 @@
 #-cp examples/scripttest
 #-cp examples/systemtest
 
+--library utest
+
 -cp src
 
 # flecstest hx source
