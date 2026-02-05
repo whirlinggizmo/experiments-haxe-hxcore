@@ -4,9 +4,9 @@ import cpp.Pointer;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Component;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Entity;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs.Position;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs.Velocity;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs.Destination;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.FlecsWrapper.Position;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.FlecsWrapper.Velocity;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.FlecsWrapper.Destination;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Observer;
 import hxcore.logging.Log;
 
