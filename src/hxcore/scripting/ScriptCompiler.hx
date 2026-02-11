@@ -25,6 +25,7 @@ class ScriptCompiler {
 		generatedScriptNamespace = namespace;
 		Log.debug('Generated script namespace set to: $namespace');
 	}
+
 	/**
 	 * Compiles a script using macro-based namespace injection instead of temporary files.
 	 * It uses :native metadata to inject namespaces.
@@ -138,26 +139,35 @@ class ScriptCompiler {
 			}
 		}
 
+		function addClassPath(args:Array<String>, classPath:String) {
+			args.push("-cp");
+			args.push(classPath);
+		}
+
 		var args = [];
 
 		// Include passed in haxe arguments
 		for (haxeArg in haxeArgs) {
 			args.push(haxeArg);
 		}
-		
+
 		// dead code elimination
 		// Note to self: WHY DOES THIS CAUSE PROBLEMS?  cppia generates something weird when it's enabled, and it breaks the script compilation
-		//args.push("--dce");
-		//args.push("no");
+		// args.push("--dce");
+		// args.push("no");
 
 		// us!
 		args.push("--library");
 		args.push("hxcore");
-		
+
+		// class path for root directory
+		args.push("-cp");
+		args.push(rootDir);
+
 		// the classes info path (as a define)
 		args.push("-D");
 		args.push('dll_import=$classesInfoPath');
-		
+
 		// no jit for emscripten :(
 		#if emscripten
 		args.push("-D");
@@ -167,7 +177,7 @@ class ScriptCompiler {
 		if (target == "cppia") {
 			args.push("-D");
 			args.push("cppia");
-		}		
+		}
 
 		// add a macro to force include the original class name
 		var includeMacroArgs = ' "${className}", true ';
@@ -178,28 +188,28 @@ class ScriptCompiler {
 		var setNativeMacroArgs = ' "${className}", "${generatedScriptNamespace}.${className}" ';
 		args.push("--macro");
 		args.push('hxcore.macros.NamespaceInjector.setNative(${setNativeMacroArgs})');
-	 
+
 		// the target (cppia, js, etc)
 		// output path must align with outputDir to avoid loader/watch mismatches
 		args.push('--${target}');
 		args.push(outputFilePath);
-		
+
 		// and the class to compile
 		args.push(className);
-		
+
 		Log.debug('Haxe executable: ${haxeExecutable}');
 		Log.debug('Args: ${args}');
 		Log.debug('Full command: ${haxeExecutable} ${args.join(" ")}');
 
 		// debugging
-		//var hardCodedArgs = ["-lib", "hxcore", "--macro", "hxcore.macros.NamespaceInjector.setNative(\"scripts.Test\",\"gen.scripts.Test\")", "--cppia", "gen/scripts/Test.cppia", "scripts.Test"];
-		//Log.debug('Hardcoded command: ' + haxeExecutable + ' ' + hardCodedArgs.join(" "));
+		// var hardCodedArgs = ["-lib", "hxcore", "--macro", "hxcore.macros.NamespaceInjector.setNative(\"scripts.Test\",\"gen.scripts.Test\")", "--cppia", "gen/scripts/Test.cppia", "scripts.Test"];
+		// Log.debug('Hardcoded command: ' + haxeExecutable + ' ' + hardCodedArgs.join(" "));
 
-		//HostClasses.exclude("hxcore");
+		// HostClasses.exclude("hxcore");
 
 		try {
 			final process = new Process(haxeExecutable, args);
-			//final process = new Process(haxeExecutable, hardCodedArgs);
+			// final process = new Process(haxeExecutable, hardCodedArgs);
 			var stdout = process.stdout.readAll().toString();
 			var stderr = process.stderr.readAll().toString();
 			var returnCode = process.exitCode();
@@ -354,11 +364,17 @@ class ScriptCompiler {
 		}
 	}
 
-	macro static public function compileScripts(scriptsDir:String = 'scripts', outputDir:String = 'gen', classesInfoPath:String = 'export_classes.filtered.info',
-			extension:String = "js"):Void {
+	macro static public function compileScripts(rootDir:String = '.', scriptsDir:String = 'scripts', outputDir:String = 'gen',
+			classesInfoPath:String = 'export_classes.filtered.info', extension:String = "cppia"):Void {
+		
+		Log.setLevel(Warning);
+		if (!Path.isAbsolute(rootDir)) {
+			rootDir = sys.FileSystem.absolutePath(rootDir);
+		}
 
-		//trace('CWD: ${Sys.getCwd()}');
-		var files = PathUtils.getFilesRecursive(scriptsDir);
+		var files = PathUtils.getFilesRecursive(Path.join([rootDir, scriptsDir]));
+
+		// trace('FOUND ${files.length} Script files');
 
 		// only include .hx files
 		files = files.filter(function(file) {
@@ -369,14 +385,24 @@ class ScriptCompiler {
 		var haxeArgs = [];
 
 		for (fileName in files) {
+			// strip the root directory
+			Log.debug(fileName);
+			fileName = PathUtils.relativePath(rootDir, fileName);
+			Log.debug(fileName);
+			// normalize it to remove leading ./
+			fileName = PathUtils.normalizePath(fileName);
+			Log.debug(fileName);
 			// strip the scriptsDir directory from the file name
-			fileName = fileName.substring(scriptsDir.length + 1);
+			// fileName = fileName.substring(scriptsDir.length + 1);
+			// Log.debug(fileName);
 			// strip the .hx extension
 			fileName = fileName.substring(0, fileName.length - 3);
+			Log.debug(fileName);
 			// replace slashes with dots
 			fileName = fileName.split("/").join(".");
+			Log.debug(fileName);
 
-			var result = compileScriptInternal(Sys.getCwd(), scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
+			var result = compileScriptInternal(rootDir, scriptsDir, outputDir, classesInfoPath, extension, haxeArgs, fileName);
 
 			if (result != 0) {
 				Log.error("Failed to compile class: " + fileName);
@@ -387,7 +413,7 @@ class ScriptCompiler {
 	}
 
 	public static function main() {
-		Log.setLevel(LogLevel.Debug);
+		Log.setLevel(LogLevel.Warning);
 		Log.debug("ScriptCompiler starting");
 		// This is the path of this file?
 		// var rootDir = FileSystem.fullPath(Sys.programPath());

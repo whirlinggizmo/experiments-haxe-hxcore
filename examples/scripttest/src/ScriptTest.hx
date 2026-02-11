@@ -12,7 +12,9 @@ class ScriptTest {
 	private var quitFlag:Bool = false;
 	private var runtime:ScriptRuntime;
 
-	public function new() {	}
+	public function new() {	
+		Log.setLevel(Warning);
+	}
 
 	public function init(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableHotReload:Bool = false) {
 		Log.info('Hello, World!');

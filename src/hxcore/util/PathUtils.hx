@@ -408,6 +408,11 @@ class PathUtils {
 		var ignoredDirectories = ["unused", "externs"];
 	 */
 	static public function getFilesRecursive(directory:String, ignoredFiles:Array<String> = null, ignoredDirectories:Array<String> = null):Array<String> {
+		// make sure the directory exists
+		if (!PathUtils.validateDirectoryPath(directory)) {
+			Log.warn('Invalid directory provided for getFilesRecursively: ${directory}');
+			return [];
+		}
 		var files:Array<String> = [];
 
 		var ignoredFilesRegex = ignoredFiles != null && ignoredFiles.length > 0 ? new EReg(ignoredFiles.join("|"), "i") : null;
@@ -416,7 +421,15 @@ class PathUtils {
 
 		// helper function to check if a file or directory is ignored
 		function isIgnored(file:String, ignoreRegexes:Array<EReg>):Bool {
+			//trace('Checking isIgnored for: ${file}');
+			if (ignoreRegexes == null) {
+				//trace('no ignoreRegexes, returning not ignored');
+				return false;
+			}	
 			for (regex in ignoreRegexes) {
+				if (regex == null) {
+					return false;
+				}
 				if (regex.match(file)) {
 					return true;
 				}
@@ -425,9 +438,12 @@ class PathUtils {
 		}
 
 		if (sys.FileSystem.exists(directory)) {
-			if (isIgnored(directory, [ignoredDirectoriesRegex])) {
+			if ((ignoredDirectoriesRegex != null) && isIgnored(directory, [ignoredDirectoriesRegex])) {
 				return files;
 			}
+			//trace('CWD: ${Sys.getCwd()}');
+			//trace(' >>>>>>>>>>> Looking in directory: ${directory}');
+			//trace('full path: ${sys.FileSystem.fullPath(directory)}');
 			for (file in sys.FileSystem.readDirectory(directory)) {
 				var path = haxe.io.Path.join([directory, file]);
 				if (!sys.FileSystem.isDirectory(path)) {
