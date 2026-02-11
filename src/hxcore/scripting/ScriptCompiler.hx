@@ -229,12 +229,20 @@ class ScriptCompiler {
 		return 0;
 	}
 
-	macro static public function generateScriptsList(scriptsDir:String = 'scripts', outputFileName:String):Void {
+	macro static public function generateScriptsList(rootDir:String = 'src', scriptsDir:String = 'scripts', outputFileName:String='gen/scripts.hxml'):Void {
 		// trace("Generating scripts list...");
 		final ignoredFiles = ["import.hx"];
 		final ignoredDirectories = ["unused", "externs"];
 
-		var files:Array<String> = PathUtils.getFilesRecursive(scriptsDir, ignoredFiles, ignoredDirectories);
+		//Log.setLevel(Warning);
+		if (!Path.isAbsolute(rootDir)) {
+			rootDir = sys.FileSystem.absolutePath(rootDir);
+		}
+		if(!Path.isAbsolute(outputFileName)) {
+			outputFileName = Path.join([rootDir, outputFileName]);
+		}
+
+		var files:Array<String> = PathUtils.getFilesRecursive(Path.join([rootDir, scriptsDir]), ignoredFiles, ignoredDirectories);
 
 		if (files == null) {
 			trace("No scripts found in " + scriptsDir);
@@ -257,8 +265,15 @@ class ScriptCompiler {
 		f.writeString("#####################################\n");
 		f.writeString("\n");
 		for (fileName in files) {
+			// strip the root directory
+			//Log.debug(fileName);
+			fileName = PathUtils.relativePath(rootDir, fileName);
+			//Log.debug(fileName);
+			// normalize it to remove leading ./
+			fileName = PathUtils.normalizePath(fileName);
+
 			// strip the scriptsDir directory from the file name
-			fileName = fileName.substring(scriptsDir.length + 1);
+			//fileName = fileName.substring(scriptsDir.length + 1);
 			// strip the .hx extension
 			fileName = fileName.substring(0, fileName.length - 3);
 			// replace slashes with dots
@@ -367,7 +382,7 @@ class ScriptCompiler {
 	macro static public function compileScripts(rootDir:String = '.', scriptsDir:String = 'scripts', outputDir:String = 'gen',
 			classesInfoPath:String = 'export_classes.filtered.info', extension:String = "cppia"):Void {
 		
-		Log.setLevel(Warning);
+		//Log.setLevel(Warning);
 		if (!Path.isAbsolute(rootDir)) {
 			rootDir = sys.FileSystem.absolutePath(rootDir);
 		}
@@ -386,12 +401,12 @@ class ScriptCompiler {
 
 		for (fileName in files) {
 			// strip the root directory
-			Log.debug(fileName);
+			//Log.debug(fileName);
 			fileName = PathUtils.relativePath(rootDir, fileName);
-			Log.debug(fileName);
+			//Log.debug(fileName);
 			// normalize it to remove leading ./
 			fileName = PathUtils.normalizePath(fileName);
-			Log.debug(fileName);
+			//Log.debug(fileName);
 			// strip the scriptsDir directory from the file name
 			// fileName = fileName.substring(scriptsDir.length + 1);
 			// Log.debug(fileName);
