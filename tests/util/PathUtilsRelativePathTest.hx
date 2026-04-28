@@ -1,5 +1,6 @@
 package tests.util;
 
+#if sys
 import utest.Test;
 import utest.Assert;
 import hxcore.util.PathUtils;
@@ -22,3 +23,4 @@ class PathUtilsRelativePathTest extends Test {
 		Assert.equals("./Test.hx", result);
 	}
 }
+#end

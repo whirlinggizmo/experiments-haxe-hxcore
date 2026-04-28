@@ -1,0 +1,30 @@
+--cmd echo "Building scripts..."
+--next
+
+
+# generate the list of all script files
+#--cmd echo -n "Building scripts list... "
+#--next
+#-lib hxcore
+#--macro core.macros.ScriptCompiler.generateScriptsList('scripts', 'gen/scripts.hxml')
+#--cmd echo "OK"
+#--next
+
+--cmd mkdir -p scripts
+--next
+-lib hxcore
+# filter the generated export_classes.info and write it to the script source directory
+--macro hxcore.macros.ExportClassesInfo.filterToFile('export_classes.info', 'scripts/export_classes.filtered.info', ['^class scripts\\..*$'])
+# move the original, unfiltered version to the script source directory for reference
+#--cmd mv export_classes.info scripts/export_classes.info
+--next
+
+
+# compile the Test script
+
+-lib hxcore
+#	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, targetType:String,
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'gen', 'scripts/export_classes.filtered.info', 'cppia', [], 'scripts.Test')
+
+--cmd echo "Build of scripts complete."
+

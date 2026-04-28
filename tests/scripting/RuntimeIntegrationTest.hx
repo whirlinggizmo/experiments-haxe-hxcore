@@ -5,8 +5,8 @@ import utest.Assert;
 import hxcore.scripting.ScriptHost;
 import hxcore.scripting.ScriptRuntime;
 import hxcore.scripting.IScriptLoader;
-import hxcore.scripting.Types.ScriptInfo;
-import hxcore.scripting.Types.HotCompileScope;
+import hxcore.scripting.IScriptLoader.ScriptInfo;
+import hxcore.scripting.ScriptConfig.HotCompileScope;
 
 private class TestLoader implements IScriptLoader {
 	public function new() {}

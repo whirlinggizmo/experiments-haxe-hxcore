@@ -65,18 +65,18 @@ class hxcore.util.MathUtils
 class hxcore.util.Glob
 class hxcore.util.FPSCounter
 class hxcore.util.DebouncedQueue
-enum hxcore.scripting.HotCompileScope
 class hxcore.scripting.ScriptWatcher
 class hxcore.scripting.ScriptRuntime
 class hxcore.scripting.ScriptResolution
 enum hxcore.scripting.ScriptSource
 enum hxcore.scripting.OverrideMode
+class hxcore.scripting.ScriptPathResolver
 class hxcore.scripting.ScriptLoader
 class hxcore.scripting.ScriptHost
 interface hxcore.scripting.IScriptHost
 class hxcore.scripting.ScriptConfig
+enum hxcore.scripting.HotCompileScope
 class hxcore.scripting.ScriptCompiler
-class hxcore.scripting.ScriptChangeCoalescer
 class hxcore.scripting.Script
 interface hxcore.scripting.IScriptLoader
 class hxcore.logging.Log
@@ -382,11 +382,11 @@ file hxcore/events/EventEmitter.hx /home/rknopf/projects/whirlinggizmo/experimen
 file hxcore/io/FileWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/io/FileWatcher.hx
 file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
 file hxcore/scripting/Script.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/Script.hx
-file hxcore/scripting/ScriptChangeCoalescer.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptChangeCoalescer.hx
 file hxcore/scripting/ScriptCompiler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptCompiler.hx
 file hxcore/scripting/ScriptConfig.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptConfig.hx
 file hxcore/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptHost.hx
 file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/hxcore/scripting/ScriptLoader.cpp.hx
+file hxcore/scripting/ScriptPathResolver.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptPathResolver.hx
 file hxcore/scripting/ScriptResolution.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptResolution.hx
 file hxcore/scripting/ScriptRuntime.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptRuntime.hx
 file hxcore/scripting/ScriptWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptWatcher.hx
@@ -397,10 +397,10 @@ file hxcore/util/MathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/ha
 file hxcore/util/PathUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/PathUtils.hx
 file hxcore/util/TypeUtils.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/TypeUtils.hx
 file hxcore/util/UpdateHandler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/util/UpdateHandler.hx
-file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx
-file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx
-file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/VariablesPrinter.hx
-file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx
-file hxcpp/debug/jsonrpc/eval/Parser.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Parser.hx
-file hxcpp/debug/jsonrpc/eval/Tools.hx /home/rknopf/toolchains/haxe/haxelib/hxcpp-debug-server/git/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Tools.hx
-file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/scripts/Test.hx
+file hxcpp/debug/jsonrpc/Protocol.hx /home/rknopf/projects/haxe/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/Protocol.hx
+file hxcpp/debug/jsonrpc/Server.hx /home/rknopf/projects/haxe/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/Server.hx
+file hxcpp/debug/jsonrpc/VariablesPrinter.hx /home/rknopf/projects/haxe/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/VariablesPrinter.hx
+file hxcpp/debug/jsonrpc/eval/Interp.hx /home/rknopf/projects/haxe/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Interp.hx
+file hxcpp/debug/jsonrpc/eval/Parser.hx /home/rknopf/projects/haxe/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Parser.hx
+file hxcpp/debug/jsonrpc/eval/Tools.hx /home/rknopf/projects/haxe/hxcpp-debugger/hxcpp-debug-server/hxcpp/debug/jsonrpc/eval/Tools.hx
+file scripts/Test.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/examples/scripttest/src/scripts/Test.hx

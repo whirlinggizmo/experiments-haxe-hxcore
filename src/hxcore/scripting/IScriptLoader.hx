@@ -1,7 +1,14 @@
 package hxcore.scripting;
 
-import hxcore.scripting.Types.ScriptInfo;
-import hxcore.scripting.Types.HotCompileScope;
+import hxcore.scripting.ScriptConfig.HotCompileScope;
+
+typedef ScriptInfo = {
+	var ?className:String;
+	var ?script:Script;
+	var ?loadedCallback:(scriptName:String, scriptInfo:ScriptInfo) -> Void;
+	var ?isExternal:Bool;
+	var ?sourcePath:String;
+}
 
 interface IScriptLoader {
 	public function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void;

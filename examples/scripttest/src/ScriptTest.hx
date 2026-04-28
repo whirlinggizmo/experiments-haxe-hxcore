@@ -13,7 +13,7 @@ class ScriptTest {
 	private var runtime:ScriptRuntime;
 
 	public function new() {	
-		Log.setLevel(Warning);
+		Log.setLevel(Info);
 	}
 
 	public function init(scriptDirectory:String = null, scriptSourceDirectory:String = null, enableHotReload:Bool = false) {

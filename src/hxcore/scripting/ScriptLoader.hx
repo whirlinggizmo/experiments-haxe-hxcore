@@ -1,9 +1,9 @@
 package hxcore.scripting;
 
 import hxcore.logging.Log;
+import hxcore.scripting.IScriptLoader.ScriptInfo;
+import hxcore.scripting.ScriptConfig.HotCompileScope;
 import hxcore.scripting.ScriptResolution;
-import hxcore.scripting.Types.HotCompileScope;
-import hxcore.scripting.Types.ScriptInfo;
 
 class ScriptLoader implements IScriptLoader {
 	public function new() {}

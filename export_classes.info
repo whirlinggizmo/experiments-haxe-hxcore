@@ -31,7 +31,7 @@ class utest.Assert
 class tests.util.PathUtilsRelativePathTest
 class tests.util.DebouncedQueueTest
 class tests.scripting.ScriptResolutionTest
-class tests.scripting.ScriptChangeCoalescerTest
+class tests.scripting.ScriptPathResolverTest
 class tests.scripting.RuntimeIntegrationTest
 class tests.scripting._RuntimeIntegrationTest.TestLoader
 class tests.scripting.RuntimeConfigIntegrationTest
@@ -88,18 +88,18 @@ class hxcore.util.PathUtils
 class hxcore.util.Glob
 class hxcore.util.ExportClassesInfoFilter
 class hxcore.util.DebouncedQueue
-enum hxcore.scripting.HotCompileScope
 class hxcore.scripting.ScriptWatcher
 class hxcore.scripting.ScriptRuntime
 class hxcore.scripting.ScriptResolution
 enum hxcore.scripting.ScriptSource
 enum hxcore.scripting.OverrideMode
+class hxcore.scripting.ScriptPathResolver
 class hxcore.scripting.ScriptLoader
 class hxcore.scripting.ScriptHost
 interface hxcore.scripting.IScriptHost
 class hxcore.scripting.ScriptConfig
+enum hxcore.scripting.HotCompileScope
 class hxcore.scripting.ScriptCompiler
-class hxcore.scripting.ScriptChangeCoalescer
 class hxcore.scripting.Script
 interface hxcore.scripting.IScriptLoader
 class hxcore.logging.Log
@@ -397,11 +397,11 @@ file hxcore/events/EventEmitter.hx /home/rknopf/projects/whirlinggizmo/experimen
 file hxcore/io/FileWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/io/FileWatcher.hx
 file hxcore/logging/Log.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/logging/Log.hx
 file hxcore/scripting/Script.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/Script.hx
-file hxcore/scripting/ScriptChangeCoalescer.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptChangeCoalescer.hx
 file hxcore/scripting/ScriptCompiler.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptCompiler.hx
 file hxcore/scripting/ScriptConfig.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptConfig.hx
 file hxcore/scripting/ScriptHost.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptHost.hx
 file hxcore/scripting/ScriptLoader.cpp.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/hxcore/scripting/ScriptLoader.cpp.hx
+file hxcore/scripting/ScriptPathResolver.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptPathResolver.hx
 file hxcore/scripting/ScriptResolution.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptResolution.hx
 file hxcore/scripting/ScriptRuntime.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptRuntime.hx
 file hxcore/scripting/ScriptWatcher.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/src/hxcore/scripting/ScriptWatcher.hx
@@ -418,7 +418,7 @@ file scripting/FakeScript.hx /home/rknopf/projects/whirlinggizmo/experiments/hax
 file scripting/FakeScriptTwo.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/FakeScriptTwo.hx
 file scripting/RuntimeConfigIntegrationTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/RuntimeConfigIntegrationTest.hx
 file scripting/RuntimeIntegrationTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/RuntimeIntegrationTest.hx
-file scripting/ScriptChangeCoalescerTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/ScriptChangeCoalescerTest.hx
+file scripting/ScriptPathResolverTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/ScriptPathResolverTest.hx
 file scripting/ScriptResolutionTest.hx /home/rknopf/projects/whirlinggizmo/experiments/haxe/hxcore/tests/scripting/ScriptResolutionTest.hx
 file utest/Assert.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Assert.hx
 file utest/Async.hx /home/rknopf/toolchains/haxe/haxelib/utest/1,13,2/src/utest/Async.hx

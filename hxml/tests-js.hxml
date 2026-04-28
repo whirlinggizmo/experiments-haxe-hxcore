@@ -1,0 +1,7 @@
+-lib utest
+-cp src
+-cp tests
+--main tests.RunTests
+--dce no
+--js out/tests-js/RunTests.js
+--cmd node out/tests-js/RunTests.js

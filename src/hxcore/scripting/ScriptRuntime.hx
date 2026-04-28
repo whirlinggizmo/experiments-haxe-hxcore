@@ -1,11 +1,7 @@
 package hxcore.scripting;
 
 import hxcore.logging.Log;
-#if (cpp || scriptable)
-import hxcore.scripting.ScriptCompiler;
-#end
-import hxcore.scripting.Types.HotCompileScope;
-import hxcore.scripting.Types.ScriptInfo;
+import hxcore.scripting.IScriptLoader.ScriptInfo;
 
 class ScriptRuntime {
 	public var config:ScriptConfig;
@@ -33,9 +29,6 @@ class ScriptRuntime {
 
 	public function applyConfig():Void {
 		config.normalizePaths();
-		#if (cpp || scriptable)
-		ScriptCompiler.setGeneratedScriptNamespace(config.generatedNamespace);
-		#end
 		loader.setScriptDirectory(config.scriptOutputRoot);
 		loader.setScriptSourceDirectory(config.scriptSourceRoot);
 		loader.setOverrideMode(config.overrideMode);

@@ -12,9 +12,9 @@ import hxcore.util.ExportClassesInfoFilter;
 import hxcore.scripting.ScriptCompiler;
 import hxcore.scripting.ScriptRuntime;
 import hxcore.scripting.ScriptConfig;
+import hxcore.scripting.ScriptConfig.HotCompileScope;
 import hxcore.scripting.ScriptHost;
 import hxcore.scripting.ScriptResolution.OverrideMode;
-import hxcore.scripting.Types.HotCompileScope;
 
 class CppiaHcrIntegrationTest extends Test {
 	function testHotCompileAndReload() {

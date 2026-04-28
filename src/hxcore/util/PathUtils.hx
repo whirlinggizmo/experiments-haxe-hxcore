@@ -68,12 +68,17 @@ class PathUtils {
 	public static function relativePathSafe(relativeTo:String, path:String):String {
 		var base = relativeTo;
 		var target = path;
+		#if sys
+		var cwd = Sys.getCwd();
+		#else
+		var cwd = ".";
+		#end
 
 		if (!Path.isAbsolute(base)) {
-			base = Path.join([Sys.getCwd(), base]);
+			base = Path.join([cwd, base]);
 		}
 		if (!Path.isAbsolute(target)) {
-			target = Path.join([Sys.getCwd(), target]);
+			target = Path.join([cwd, target]);
 		}
 
 		return relativePath(base, target);
@@ -81,12 +86,16 @@ class PathUtils {
 
 	public static function ensureDirectory(path:String):String {
 		path = normalizePath(path);
+		#if sys
 		if (FileSystem.exists(path)) {
 			if (FileSystem.isDirectory(path)) {
 				return path; // = Path.addTrailingSlash(path);
 			}
 		}
 		Log.error('Path is not a directory: $path');
+		#else
+		Log.warn('ensureDirectory fallback without sys for path: $path');
+		#end
 		return Path.directory(path);
 	}
 
@@ -154,7 +163,11 @@ class PathUtils {
 		if (Path.isAbsolute(normalized)) {
 			return normalized;
 		}
+		#if sys
 		return normalizePath(Path.join([Sys.getCwd(), normalized]));
+		#else
+		return normalized;
+		#end
 	}
 
 	/**
@@ -163,7 +176,11 @@ class PathUtils {
 	public static function getSourceRootParent(sourceDir:String):String {
 		var absolute = toAbsolutePath(sourceDir);
 		if (absolute == null || absolute.length == 0) {
+			#if sys
 			return Sys.getCwd();
+			#else
+			return ".";
+			#end
 		}
 		var trimmed = stripTrailingSlash(absolute);
 		return Path.directory(trimmed);
@@ -179,7 +196,11 @@ class PathUtils {
 			return path;
 		}
 		if (!Path.isAbsolute(base)) {
+			#if sys
 			base = normalizePath(Path.join([Sys.getCwd(), base]));
+			#else
+			base = normalizePath(base);
+			#end
 		}
 
 		if (Path.isAbsolute(path)) {
@@ -194,14 +215,22 @@ class PathUtils {
 		if (path == null || path.length == 0) {
 			return false;
 		}
+		#if sys
 		return FileSystem.exists(path) && !FileSystem.isDirectory(path);
+		#else
+		return false;
+		#end
 	}
 
 	private static function validateDirectoryPath(path:String):Bool {
 		if (path == null || path.length == 0) {
 			return false;
 		}
+		#if sys
 		return FileSystem.exists(path) && FileSystem.isDirectory(path);
+		#else
+		return false;
+		#end
 	}
 
 	public static function findHaxeExecutablePath():Null<String> {
@@ -408,6 +437,10 @@ class PathUtils {
 		var ignoredDirectories = ["unused", "externs"];
 	 */
 	static public function getFilesRecursive(directory:String, ignoredFiles:Array<String> = null, ignoredDirectories:Array<String> = null):Array<String> {
+		#if !sys
+		Log.warn('getFilesRecursive requires sys: $directory');
+		return [];
+		#else
 		// make sure the directory exists
 		if (!PathUtils.validateDirectoryPath(directory)) {
 			Log.warn('Invalid directory provided for getFilesRecursively: ${directory}');
@@ -459,6 +492,7 @@ class PathUtils {
 			trace('"$directory" does not exist');
 		}
 
-		return files;
+			return files;
+		#end
+		}
 	}
-}

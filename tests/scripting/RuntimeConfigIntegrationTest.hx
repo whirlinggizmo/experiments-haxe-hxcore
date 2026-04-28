@@ -4,12 +4,12 @@ import utest.Test;
 import utest.Assert;
 import hxcore.scripting.IScriptLoader;
 import hxcore.scripting.ScriptConfig;
+import hxcore.scripting.ScriptConfig.HotCompileScope;
 import hxcore.scripting.ScriptRuntime;
 import hxcore.scripting.ScriptResolution;
 import hxcore.scripting.ScriptResolution.OverrideMode;
 import hxcore.scripting.ScriptResolution.ScriptSource;
-import hxcore.scripting.Types.ScriptInfo;
-import hxcore.scripting.Types.HotCompileScope;
+import hxcore.scripting.IScriptLoader.ScriptInfo;
 
 private class FakeLoader implements IScriptLoader {
 	public var scriptDir:String;

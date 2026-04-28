@@ -1,7 +1,11 @@
 package hxcore.scripting;
 
 import hxcore.scripting.ScriptResolution.OverrideMode;
-import hxcore.scripting.Types.HotCompileScope;
+
+enum HotCompileScope {
+	ScriptOnly;
+	SourceRoot;
+}
 
 class ScriptConfig {
 	public var scriptSourceRoot:String;

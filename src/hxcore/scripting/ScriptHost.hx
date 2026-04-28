@@ -7,7 +7,7 @@ package hxcore.scripting;
 // import haxe.macro.Type.Ref;
 // import hxcore.util.TypeUtils;
 import hxcore.scripting.IScriptLoader;
-import hxcore.scripting.Types.ScriptInfo;
+import hxcore.scripting.IScriptLoader.ScriptInfo;
 import hxcore.events.EventEmitter;
 // import hxcore.events.EventEmitterTracker;
 import hxcore.logging.Log;
@@ -31,8 +31,8 @@ interface IScriptHost {
 
 class ScriptHost implements IScriptHost {
 	private var script:Script;
-	// private var _ctx:ScriptContext;
-	private var ctx:ScriptContext;
+	// private var _ctx:Types.ScriptContext;
+	private var ctx:Types.ScriptContext;
 	private var event:EventEmitter;
 	private var runtime:ScriptRuntime;
 

@@ -26,6 +26,29 @@ class ScriptCompiler {
 		Log.debug('Generated script namespace set to: $namespace');
 	}
 
+	public static function compileCppia(scriptSourceRoot:String, scriptOutputRoot:String, classesInfoPath:String, scriptName:String):Int {
+		var scriptSourceAbsolutePath = PathUtils.toAbsolutePath(scriptSourceRoot);
+		var outputAbsolutePath = PathUtils.toAbsolutePath(scriptOutputRoot);
+		var classesInfoAbsolutePath = PathUtils.toAbsolutePath(classesInfoPath);
+		var rootDir = ScriptPathResolver.sourceRootParent(scriptSourceAbsolutePath);
+		var haxeArgs = ["-lib", "hxcore"];
+
+		if (rootDir != null && rootDir.length > 0) {
+			haxeArgs.push("-cp");
+			haxeArgs.push(rootDir);
+		}
+
+		return compileScriptInternal(
+			rootDir,
+			scriptSourceAbsolutePath,
+			outputAbsolutePath,
+			classesInfoAbsolutePath,
+			"cppia",
+			haxeArgs,
+			scriptName
+		);
+	}
+
 	/**
 	 * Compiles a script using macro-based namespace injection instead of temporary files.
 	 * It uses :native metadata to inject namespaces.
@@ -63,13 +86,13 @@ class ScriptCompiler {
 		if (StringTools.startsWith(target, "."))
 			target = target.substring(1);
 
-		var classNameAsPath = StringTools.replace(className, ".", "/");
+		var classNameAsPath = ScriptPathResolver.classNameToPath(className);
 		var classPath = new Path(classNameAsPath);
 		var packagePath = classPath.dir ?? "";
 		var outputFileName = '${classPath.file}.$target';
 		var outputFileDir = Path.join([outputDir, packagePath]);
 		var outputFilePath = Path.join([outputFileDir, outputFileName]);
-		var hxFilePath = Path.join([rootDir, classNameAsPath + ".hx"]);
+		var hxFilePath = ScriptPathResolver.sourceScriptPath(rootDir, className);
 
 		Log.debug('Compiling class with macro injection: $className');
 		Log.debug('Root dir: $rootDir');
