@@ -1,7 +1,7 @@
-import cpp.Float32;
-import cpp.Native;
-import cpp.Pointer;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.Types.Float32;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.Types.Ref;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Component;
+import hxcore.flecs.flecs_wrapper.bindings.haxe.ComponentMacro;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Entity;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs;
 import hxcore.flecs.flecs_wrapper.bindings.haxe.Observer;
@@ -65,41 +65,23 @@ class FlecsTest {
     Flecs.init();
     Log.info('Flecs version: ${Flecs.version()}');
 
-    var posSize = Native.sizeof(Position);
-    var velSize = Native.sizeof(Velocity);
-    var destSize = Native.sizeof(Destination);
-    var tcSize = Native.sizeof(TestComponent);
-
-    Log.info('Position size: ${posSize}');
-    Log.info('Velocity size: ${velSize}');
-    Log.info('Destination size: ${destSize}');
-    Log.info('TestComponent size: ${tcSize}');
-
-    var position = Component.create("Position", posSize);
-    var velocity = Component.create("Velocity", velSize);
-    var destination = Component.create("Destination", destSize);
-    var testComp = Component.create("TestComponent", tcSize);
+    var position = ComponentMacro.ofType(Position);
+    var velocity = ComponentMacro.ofType(Velocity);
+    var destination = ComponentMacro.ofType(Destination);
+    var testComp = ComponentMacro.ofType(TestComponent);
 
     System.addSystem("MoveSystem", [position, velocity], function(it) {
-      for (i in 0...cast it.count) {
-        var pos:Pointer<Position> = it.colByComponentTyped(position, i);
-        var vel:Pointer<Velocity> = it.colByComponentTyped(velocity, i);
+      it.each2(position, velocity, function(pos:Ref<Position>, vel:Ref<Velocity>) {
         pos.ref.x += vel.ref.x * it.dt;
         pos.ref.y += vel.ref.y * it.dt;
         pos.ref.z += vel.ref.z * it.dt;
-      }
+      });
     });
 
     Observer.addObserver([position], [Flecs.EcsOnSet], function(it) {
-      if (it.componentId != position.id) {
-        return;
-      }
-      var ptr:cpp.Pointer<Position> = it.colPtrByComponentTyped(position);
-      if (ptr == null) {
-        return;
-      }
-      var first = ptr.ref;
-      Log.info('Observer: Position set -> (${first.x}, ${first.y})');
+      var ptr:Ref<Position> = it.colPtrByComponentTyped(position);
+      if (ptr == null) return;
+      Log.info('Observer: Position set -> (${ptr.ref.x}, ${ptr.ref.y})');
     });
 
     var entity = Entity.create("Entity");
@@ -108,32 +90,17 @@ class FlecsTest {
     entity.add(destination);
     entity.add(testComp);
 
-    var vel:Velocity = new Velocity(1.0, 2.0, 0.0);
-    var velPtr:Pointer<Velocity> = untyped __cpp__("::cpp::Pointer<Velocity>(&{0})", vel);
-    entity.setPtr(velocity, velPtr);
-
-    var pos = new Position(12.0, 34.0, 0.0);
-    var posPtr:Pointer<Position> = untyped __cpp__("::cpp::Pointer<Position>(&{0})", pos);
-    entity.setPtr(position, posPtr);
-    if (pos.x == -9999) {
-      trace(pos);
-    }
+    entity.set(velocity, new Velocity(1.0, 2.0, 0.0));
+    entity.set(position, new Position(12.0, 34.0, 0.0));
 
     for (i in 0...3) {
       Flecs.progress(1.0);
-      var posPtr:cpp.Pointer<Position> = entity.getPtr(position);
-      var velPtr:cpp.Pointer<Velocity> = entity.getPtr(velocity);
-      var tcPtr:cpp.Pointer<TestComponent> = entity.getPtr(testComp);
-
-      if (posPtr != null) {
-        Log.info('Position: (${posPtr.ref.x}, ${posPtr.ref.y})');
-      }
-      if (velPtr != null) {
-        Log.info('Velocity: (${velPtr.ref.x}, ${velPtr.ref.y})');
-      }
-      if (tcPtr != null) {
-        Log.info('TestComponent: (${tcPtr.ref.x}, ${tcPtr.ref.y})');
-      }
+      var pos:Ref<Position> = entity.tryGet(position);
+      var vel:Ref<Velocity> = entity.tryGet(velocity);
+      var tc:Ref<TestComponent> = entity.tryGet(testComp);
+      if (pos != null) Log.info('Position: (${pos.ref.x}, ${pos.ref.y})');
+      if (vel != null) Log.info('Velocity: (${vel.ref.x}, ${vel.ref.y})');
+      if (tc != null) Log.info('TestComponent: (${tc.ref.x}, ${tc.ref.y})');
     }
 
     Flecs.fini();
