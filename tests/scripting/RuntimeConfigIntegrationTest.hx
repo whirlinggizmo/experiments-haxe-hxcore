@@ -27,6 +27,7 @@ private class FakeLoader implements IScriptLoader {
 	public function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {}
 	public function unload(scriptName:String):Void {}
 	public function isLoaded(scriptName:String):Bool return false;
+	public function isSubscribed(scriptName:String):Bool return false;
 	public function dispose():Void {}
 
 	public function setScriptDirectory(dir:String):Void scriptDir = dir;

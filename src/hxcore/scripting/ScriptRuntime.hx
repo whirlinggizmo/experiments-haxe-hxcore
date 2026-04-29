@@ -58,6 +58,10 @@ class ScriptRuntime {
 		return loader.isLoaded(scriptName);
 	}
 
+	public function isSubscribed(scriptName:String):Bool {
+		return loader.isSubscribed(scriptName);
+	}
+
 	public function dispose():Void {
 		loader.dispose();
 	}

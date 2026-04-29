@@ -233,6 +233,10 @@ class ScriptLoader implements IScriptLoader {
 		return scriptCache.exists(scriptName);
 	}
 
+	public function isSubscribed(scriptName:String):Bool {
+		return scriptCache.exists(scriptName);
+	}
+
 	public function dispose():Void {
 		scriptCache.clear();
 	}

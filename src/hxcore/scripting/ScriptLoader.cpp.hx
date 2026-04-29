@@ -482,10 +482,19 @@ class ScriptLoader implements IScriptLoader {
 		var cachedScriptInfo = scriptCache.get(scriptName);
 
 		if (cachedScriptInfo != null) {
-			// already loaded
-			if (onLoaded != null) {
-				onLoaded(scriptName, cachedScriptInfo);
+			if (cachedScriptInfo.script != null) {
+				// already loaded and active
+				if (onLoaded != null) {
+					onLoaded(scriptName, cachedScriptInfo);
+				}
+				return;
 			}
+			// soft-unloaded (subscription exists but no active script) - try to reload
+			// update the callback in case caller passed a new one
+			if (onLoaded != null) {
+				cachedScriptInfo.loadedCallback = onLoaded;
+			}
+			forceReload(scriptName, cachedScriptInfo.loadedCallback);
 			return;
 		}
 		if (!setupHotCompileWatch(scriptName)) {
@@ -499,26 +508,34 @@ class ScriptLoader implements IScriptLoader {
 
 	public function unload(scriptName:String):Void {
 		var cachedScriptInfo = scriptCache.get(scriptName);
-		if (cachedScriptInfo != null) {
-			scriptCache.remove(scriptName);
-			Log.debug("Unloaded script: " + scriptName);
-			// Notify the original listener (e.g. ScriptHost) that the script is gone
-			// so it can stop using it (sets scriptLoaded=false in the host).
+		if (cachedScriptInfo != null && cachedScriptInfo.script != null) {
+			// Soft-unload: null the script instance but keep the cache entry as a
+			// subscription so the watcher can reload when the file reappears.
+			cachedScriptInfo.script = null;
+			Log.debug("Soft-unloaded script (subscription retained): " + scriptName);
+			// Notify the listener (e.g. ScriptHost) so it stops using the old instance.
 			if (cachedScriptInfo.loadedCallback != null) {
 				cachedScriptInfo.loadedCallback(scriptName, null);
 			}
-			#if sys
-			if (watcher != null) {
-				watcher.unload(scriptName);
-			}
-			#end
+			// Attempt immediate fallback to internal class if available.
+			forceReload(scriptName);
 		}
 	}
 
 	/**
-	 * Test helper - check if a script is currently loaded.
+	 * Returns true if the script has an active (non-null) script instance.
+	 * A soft-unloaded script has a cache entry but returns false here.
 	 */
 	public function isLoaded(scriptName:String):Bool {
+		var info = scriptCache.get(scriptName);
+		return info != null && info.script != null;
+	}
+
+	/**
+	 * Returns true if the script has a subscription (was ever loaded via load()),
+	 * even if it is currently soft-unloaded.
+	 */
+	public function isSubscribed(scriptName:String):Bool {
 		return scriptCache.exists(scriptName);
 	}
 

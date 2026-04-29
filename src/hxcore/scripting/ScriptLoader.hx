@@ -34,5 +34,6 @@ class ScriptLoader implements IScriptLoader {
 
 	public function unload(scriptName:String):Void {}
 	public function isLoaded(scriptName:String):Bool return false;
+	public function isSubscribed(scriptName:String):Bool return false;
 	public function dispose():Void {}
 }
