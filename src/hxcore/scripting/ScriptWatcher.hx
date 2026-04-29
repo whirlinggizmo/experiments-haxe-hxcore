@@ -18,6 +18,7 @@ class ScriptWatcher {
 	private var haxeSourceFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
 	private var compiledFileWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
 	private var compiledLastReloadMtime:Map<String, Float> = new Map<String, Float>();
+	private var compiledDirectoryWatchers:Map<String, FileWatcher> = new Map<String, FileWatcher>();
 
 	public function new(?debounceMs:Int = 150) {
 		this.debounceMs = debounceMs;
@@ -89,7 +90,7 @@ class ScriptWatcher {
 		return watcher;
 	}
 
-	public function watchSourceRoot(scriptSourceDirectory:String, onChanged:String->Void):FileWatcher {
+	public function watchSourceDirectory(scriptSourceDirectory:String, onChanged:String->Void):FileWatcher {
 		scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
 		var watcher = new FileWatcher(scriptSourceDirectory, (filename:String, event:FileChangeEvent) -> {
 			Log.debug("Script source file changed: " + filename);
@@ -104,13 +105,133 @@ class ScriptWatcher {
 	public function watchHotCompile(scriptSourceDirectory:String, className:String, hotCompileScope:HotCompileScope, onChanged:String->Void):Void {
 		removeSourceWatcher(className);
 		var sourceWatcher = switch (hotCompileScope) {
-			case HotCompileScope.SourceRoot:
-				watchSourceRoot(scriptSourceDirectory, onChanged);
-			case HotCompileScope.ScriptOnly:
+			case HotCompileScope.ScriptDirectory:
+				watchSourceDirectory(scriptSourceDirectory, onChanged);
+			case HotCompileScope.ScriptFile:
 				watchSource(scriptSourceDirectory, className, onChanged);
 		};
 		if (sourceWatcher != null) {
 			haxeSourceFileWatchers.set(className, sourceWatcher);
+		}
+	}
+
+	/**
+	 * Watches the entire source script directory for any .hx file changes.
+	 * Derives class names from file paths and fires onChanged with the className.
+	 * This enables auto-compile of newly added scripts.
+	 * onRemoved is called when a source file is deleted (to clean up compiled artifact).
+	 */
+	public function watchSourceDirectoryCompile(scriptSourceDirectory:String, onChanged:String->Void, ?onRemoved:String->Void):Void {
+		var normalizedDir = PathUtils.normalizePath(scriptSourceDirectory);
+		// Get parent directory to preserve package in class name derivation
+		var parentDir = haxe.io.Path.directory(normalizedDir);
+
+		Log.debug("Watching source script directory for compiles: " + normalizedDir);
+
+		var watcher = new FileWatcher(normalizedDir, (filename:String, event:FileChangeEvent) -> {
+			// Derive class name from the file path (using parent to preserve package)
+			var className = ScriptPathResolver.classNameFromSourcePath(filename, parentDir);
+			if (className == null) {
+				Log.debug("Could not derive class name from: " + filename);
+				return;
+			}
+			if (event == FileChangeEvent.Removed) {
+				Log.debug("Source file removed: " + filename + " -> " + className);
+				if (onRemoved != null) {
+					onRemoved(className);
+				}
+				return;
+			}
+			if (event == FileChangeEvent.Added) {
+				Log.debug("New source file detected: " + filename + " -> " + className);
+			} else {
+				Log.debug("Source file changed: " + filename + " -> " + className);
+			}
+			pushAndSchedule(className, onChanged);
+		});
+
+		watcher.add(Glob.toEReg("./**/*.hx"));
+		watcher.start();
+		// Store under a special key for directory-wide watching
+		haxeSourceFileWatchers.set("__directory__", watcher);
+	}
+
+	public function stopWatchingSourceDirectoryCompile():Void {
+		var watcher = haxeSourceFileWatchers.get("__directory__");
+		if (watcher != null) {
+			watcher.dispose();
+			haxeSourceFileWatchers.remove("__directory__");
+		}
+	}
+
+	/**
+	 * Watches the entire compiled script directory for any .cppia file changes.
+	 * Complement to watchSourceDirectory. Derives class names from file paths and only
+	 * fires onChanged for already-loaded scripts. Includes mtime tracking to prevent
+	 * duplicate reloads. onChanged receives the className for add/modify events.
+	 * onRemoved receives className when a .cppia file is deleted.
+	 */
+	public function watchCompiledDirectory(scriptDirectory:String, isScriptLoaded:String->Bool, onChanged:String->Void, ?onRemoved:String->Void):Void {
+		var normalizedDir = PathUtils.ensureDirectory(PathUtils.normalizePath(scriptDirectory));
+
+		// Remove existing watcher for this directory if present
+		if (compiledDirectoryWatchers.exists(normalizedDir)) {
+			compiledDirectoryWatchers.get(normalizedDir).dispose();
+		}
+
+		Log.debug("Watching compiled script directory: " + normalizedDir);
+
+		var watcher = new FileWatcher(normalizedDir, (filename:String, event:FileChangeEvent) -> {
+			// Derive class name from the file path first (needed for both add/change and remove)
+			var className = ScriptPathResolver.classNameFromCompiledPath(filename, "cppia", normalizedDir);
+			if (className == null) {
+				Log.debug("Could not derive class name from: " + filename);
+				return;
+			}
+
+			if (event == FileChangeEvent.Removed) {
+				Log.info("Compiled script removed: " + filename + " -> " + className);
+				// Clear mtime tracking for this script
+				compiledLastReloadMtime.remove(className);
+				// Call onRemoved callback if script was loaded
+				if (isScriptLoaded(className) && onRemoved != null) {
+					onRemoved(className);
+				}
+				return;
+			}
+
+			// Only process if this script is already loaded
+			if (!isScriptLoaded(className)) {
+				Log.debug("Ignoring .cppia for unloaded script: " + className);
+				return;
+			}
+			// Check mtime to prevent duplicate reloads
+			var mtime = FileSystem.stat(filename).mtime.getTime();
+			if (compiledLastReloadMtime.exists(className) && compiledLastReloadMtime.get(className) == mtime) {
+				Log.debug("Skipping duplicate reload for " + className);
+				return;
+			}
+			compiledLastReloadMtime.set(className, mtime);
+
+			if (event == FileChangeEvent.Added) {
+				Log.debug("New script file detected: " + filename + " -> " + className);
+			} else {
+				Log.debug("Script file changed: " + filename + " -> " + className);
+			}
+			pushAndSchedule(className, onChanged);
+		});
+
+		watcher.add(Glob.toEReg("./**/*.cppia"));
+		watcher.start();
+		compiledDirectoryWatchers.set(normalizedDir, watcher);
+	}
+
+	public function stopWatchingCompiledDirectory(scriptDirectory:String):Void {
+		var normalizedDir = PathUtils.ensureDirectory(PathUtils.normalizePath(scriptDirectory));
+		var watcher = compiledDirectoryWatchers.get(normalizedDir);
+		if (watcher != null) {
+			watcher.dispose();
+			compiledDirectoryWatchers.remove(normalizedDir);
 		}
 	}
 
@@ -119,6 +240,9 @@ class ScriptWatcher {
 			w.tick();
 		}
 		for (w in compiledFileWatchers) {
+			w.tick();
+		}
+		for (w in compiledDirectoryWatchers) {
 			w.tick();
 		}
 	}
@@ -130,6 +254,10 @@ class ScriptWatcher {
 	}
 
 	public function dispose():Void {
+		for (watcher in compiledDirectoryWatchers) {
+			watcher.dispose();
+		}
+		compiledDirectoryWatchers.clear();
 		for (watcher in compiledFileWatchers) {
 			watcher.dispose();
 		}
@@ -198,16 +326,24 @@ class ScriptWatcher {
 		Log.warn("ScriptWatcher not available on this platform (requires sys)");
 		return null;
 	}
-	public function watchSourceRoot(scriptSourceDirectory:String, onChanged:String->Void):Dynamic {
+	public function watchSourceDirectory(scriptSourceDirectory:String, onChanged:String->Void):Dynamic {
 		Log.warn("ScriptWatcher not available on this platform (requires sys)");
 		return null;
 	}
 	public function watchHotCompile(scriptSourceDirectory:String, className:String, hotCompileScope:HotCompileScope, onChanged:String->Void):Void {
 		Log.warn("ScriptWatcher not available on this platform (requires sys)");
 	}
+	public function watchSourceDirectoryCompile(scriptSourceDirectory:String, onChanged:String->Void, ?onRemoved:String->Void):Void {
+		Log.warn("ScriptWatcher not available on this platform (requires sys)");
+	}
+	public function stopWatchingSourceDirectoryCompile():Void {}
 	public function watchHotReload(scriptDirectory:String, scriptName:String, onChanged:String->Void):Void {
 		Log.warn("ScriptWatcher not available on this platform (requires sys)");
 	}
+	public function watchCompiledDirectory(scriptDirectory:String, isScriptLoaded:String->Bool, onChanged:String->Void, ?onRemoved:String->Void):Void {
+		Log.warn("ScriptWatcher not available on this platform (requires sys)");
+	}
+	public function stopWatchingCompiledDirectory(scriptDirectory:String):Void {}
 	public function tick():Void {}
 	public function unload(scriptName:String):Void {}
 	public function dispose():Void {}

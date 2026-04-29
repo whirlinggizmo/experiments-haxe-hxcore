@@ -229,6 +229,10 @@ class ScriptLoader implements IScriptLoader {
 		}
 	}
 
+	public function isLoaded(scriptName:String):Bool {
+		return scriptCache.exists(scriptName);
+	}
+
 	public function dispose():Void {
 		scriptCache.clear();
 	}

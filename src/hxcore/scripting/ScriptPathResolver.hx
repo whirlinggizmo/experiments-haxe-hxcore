@@ -7,6 +7,39 @@ class ScriptPathResolver {
 		return StringTools.replace(className, ".", "/");
 	}
 
+	/**
+	 * Derives a Haxe class name from a file path by removing extension and root prefix.
+	 * e.g., "/path/to/gen/scripts/Test.cppia" with root "/path/to/gen/" -> "scripts.Test"
+	 * Use classNameFromSourcePath or classNameFromCompiledPath for common cases.
+	 */
+	public static function classNameFromPath(filePath:String, extension:String, rootDir:String = null):String {
+		var normalized = Path.normalize(filePath);
+		var ext = "." + extension;
+		if (!StringTools.endsWith(normalized, ext)) {
+			return null;
+		}
+		// Remove extension
+		var withoutExt = normalized.substring(0, normalized.length - ext.length);
+		// If root provided, make path relative to it
+		var relativePath = withoutExt;
+		if (rootDir != null && rootDir.length > 0) {
+			var normalizedRoot = Path.addTrailingSlash(Path.normalize(rootDir));
+			if (StringTools.startsWith(withoutExt, normalizedRoot)) {
+				relativePath = withoutExt.substring(normalizedRoot.length);
+			}
+		}
+		// Convert path separators to dots
+		return StringTools.replace(relativePath, "/", ".");
+	}
+
+	/**
+	 * Derives a Haxe class name from a compiled script file path.
+	 * e.g., "/path/to/gen/scripts/Test.cppia" -> "scripts.Test"
+	 */
+	public static function classNameFromCompiledPath(compiledPath:String, extension:String = "cppia", outputRoot:String = null):String {
+		return classNameFromPath(compiledPath, extension, outputRoot);
+	}
+
 	public static function compiledScriptRelativePath(className:String, extension:String = "cppia"):String {
 		return classNameToPath(className) + "." + extension;
 	}
@@ -19,6 +52,14 @@ class ScriptPathResolver {
 	public static function sourceScriptPath(rootDir:String, className:String):String {
 		var root = Path.addTrailingSlash(Path.normalize(rootDir));
 		return Path.join([root, classNameToPath(className) + ".hx"]);
+	}
+
+	/**
+	 * Derives a Haxe class name from a source script file path.
+	 * e.g., "/path/to/scripts/Foo.hx" -> "scripts.Foo"
+	 */
+	public static function classNameFromSourcePath(sourcePath:String, sourceRoot:String = null):String {
+		return classNameFromPath(sourcePath, "hx", sourceRoot);
 	}
 
 	public static function generatedClassName(className:String, generatedNamespace:String):String {

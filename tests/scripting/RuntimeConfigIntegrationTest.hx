@@ -26,6 +26,7 @@ private class FakeLoader implements IScriptLoader {
 	public function load(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {}
 	public function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {}
 	public function unload(scriptName:String):Void {}
+	public function isLoaded(scriptName:String):Bool return false;
 	public function dispose():Void {}
 
 	public function setScriptDirectory(dir:String):Void scriptDir = dir;
@@ -49,7 +50,7 @@ class RuntimeConfigIntegrationTest extends Test {
 		cfg.externalEnabled = true;
 		cfg.hotReloadEnabled = true;
 		cfg.hotCompileEnabled = true;
-		cfg.hotCompileScope = HotCompileScope.SourceRoot;
+		cfg.hotCompileScope = HotCompileScope.ScriptDirectory;
 
 		var loader = new FakeLoader();
 		var runtime = new ScriptRuntime(cfg, loader);
@@ -61,7 +62,7 @@ class RuntimeConfigIntegrationTest extends Test {
 		Assert.equals(true, loader.externalEnabled);
 		Assert.equals(true, loader.hotReloadEnabled);
 		Assert.equals(true, loader.hotCompileEnabled);
-		Assert.equals(HotCompileScope.SourceRoot, loader.hotCompileScope);
+		Assert.equals(HotCompileScope.ScriptDirectory, loader.hotCompileScope);
 	}
 
 	function testOverrideResolutionWithExternalToggle() {

@@ -54,6 +54,10 @@ class ScriptRuntime {
 		loader.unload(scriptName);
 	}
 
+	public function isLoaded(scriptName:String):Bool {
+		return loader.isLoaded(scriptName);
+	}
+
 	public function dispose():Void {
 		loader.dispose();
 	}

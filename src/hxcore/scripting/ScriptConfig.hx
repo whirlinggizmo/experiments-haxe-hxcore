@@ -3,8 +3,8 @@ package hxcore.scripting;
 import hxcore.scripting.ScriptResolution.OverrideMode;
 
 enum HotCompileScope {
-	ScriptOnly;
-	SourceRoot;
+	ScriptFile;
+	ScriptDirectory;
 }
 
 class ScriptConfig {
@@ -26,7 +26,7 @@ class ScriptConfig {
 		externalEnabled = false;
 		hotReloadEnabled = false;
 		hotCompileEnabled = false;
-		hotCompileScope = HotCompileScope.ScriptOnly;
+		hotCompileScope = HotCompileScope.ScriptDirectory;
 		debounceMs = 150;
 	}
 

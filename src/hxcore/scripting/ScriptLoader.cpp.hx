@@ -30,9 +30,11 @@ class ScriptLoader implements IScriptLoader {
 	private var changeDebounceMs:Int = 150;
 	private var hotReloadEnabled:Bool = false;
 	private var hotCompileEnabled:Bool = false;
-	private var hotCompileScope:HotCompileScope = HotCompileScope.ScriptOnly;
+	private var hotCompileScope:HotCompileScope = HotCompileScope.ScriptDirectory;
 	private var classesInfoPath:String = ".";
 	private var watcher:ScriptWatcher = null;
+	private var directoryHotReloadEnabled:Bool = false;
+	private var directoryHotCompileEnabled:Bool = false;
 
 	public function setScriptDirectory(scriptDirectory:String):Void {
 		this.scriptDirectory = PathUtils.normalizePath(scriptDirectory);
@@ -290,6 +292,8 @@ class ScriptLoader implements IScriptLoader {
 		if (loadedCallback != null) {
 			loadedCallback(scriptName, null);
 		}
+		// Note: We don't unload here - let the caller decide if unload is appropriate
+		// to avoid use-after-free issues during active reload operations
 	}
 
 	private function loadAndCacheScript(scriptName:String, onLoaded:String->ScriptInfo->Void):Void {
@@ -339,7 +343,64 @@ class ScriptLoader implements IScriptLoader {
 		#end
 	}
 
+	private function setupDirectoryHotCompileWatch():Bool {
+		if (!hotCompileEnabled || directoryHotCompileEnabled) {
+			return true;
+		}
+		if (scriptSourceDirectory == null || scriptSourceDirectory.length == 0) {
+			Log.warn("Hot compile requires script source directory");
+			return false;
+		}
+		// Ensure source directory and classes info path are set
+		scriptSourceDirectory = PathUtils.normalizePath(scriptSourceDirectory);
+		classesInfoPath = ScriptPathResolver.exportClassesInfoPath(scriptSourceDirectory);
+		ensureWatchCoordinator();
+
+		// Watch entire source directory, derive class names from paths, compile any changed/added script
+		watcher.watchSourceDirectoryCompile(scriptSourceDirectory, (className:String) -> {
+			Log.info("Directory Compile Watcher: Source changed for: " + className);
+			// Compile the changed file, plus recompile all loaded external scripts
+			// (to handle dependency changes - if Dep.hx changes, Test.hx that uses it needs recompile)
+			var scriptsToCompile = [className];
+			for (loadedName => _ in scriptCache) {
+				if (loadedName != className && !scriptsToCompile.contains(loadedName)) {
+					scriptsToCompile.push(loadedName);
+				}
+			}
+			for (scriptToCompile in scriptsToCompile) {
+				Log.debug("Recompiling due to source change: " + scriptToCompile);
+				var result = ScriptCompiler.compileCppia(scriptSourceDirectory, scriptDirectory, classesInfoPath, scriptToCompile);
+				if (result != 0) {
+					Log.warn("Hot compile failed for: " + scriptToCompile);
+				}
+			}
+		}, (className:String) -> {
+			// Source file removed - delete the compiled .cppia to clean up
+			Log.info("Source removed, deleting compiled: " + className);
+			var cppiaPath = ScriptPathResolver.compiledScriptPath(scriptDirectory, className, "cppia");
+			if (FileSystem.exists(cppiaPath)) {
+				try {
+					FileSystem.deleteFile(cppiaPath);
+					Log.debug("Deleted compiled script: " + cppiaPath);
+				} catch (e:Dynamic) {
+					Log.warn("Failed to delete compiled script: " + cppiaPath + " - " + e);
+				}
+			}
+			// Also unload if currently loaded
+			unload(className);
+		});
+
+		directoryHotCompileEnabled = true;
+		return true;
+	}
+
+	/** @deprecated Use setupDirectoryHotCompileWatch instead */
 	private function setupHotCompileWatch(scriptName:String):Bool {
+		// When using ScriptDirectory scope, delegate to directory-wide watch
+		if (hotCompileScope == HotCompileScope.ScriptDirectory) {
+			return setupDirectoryHotCompileWatch();
+		}
+		// Fallback to per-file watching for ScriptFile scope
 		if (!hotCompileEnabled) {
 			return true;
 		}
@@ -355,7 +416,6 @@ class ScriptLoader implements IScriptLoader {
 				Log.error("Unknown script: " + scriptName);
 				return;
 			}
-
 			var result = ScriptCompiler.compileCppia(scriptSourceDirectory, scriptDirectory, classesInfoPath, scriptName);
 			if (result != 0) {
 				Log.warn("Hot compile failed, keeping previous script: " + scriptName);
@@ -364,22 +424,44 @@ class ScriptLoader implements IScriptLoader {
 		return true;
 	}
 
-	private function setupHotReloadWatch(scriptName:String):Bool {
-		if (!hotReloadEnabled) {
+	private function setupDirectoryHotReloadWatch():Bool {
+		if (!hotReloadEnabled || directoryHotReloadEnabled) {
 			return true;
 		}
-		if (!validateWatcherSetup(scriptDirectory, scriptName, true)) {
+		if (scriptDirectory == null || scriptDirectory.length == 0) {
+			Log.warn("Hot reload requires script directory");
 			return false;
 		}
 		scriptDirectory = PathUtils.normalizePath(scriptDirectory);
-		Log.debug("Path for compiled script files(.cppia) files is: " + scriptDirectory);
+		Log.debug("Setting up directory hot reload watch for: " + scriptDirectory);
+
+		// Ensure directory exists so FileWatcher can scan it
+		if (!FileSystem.exists(scriptDirectory)) {
+			Log.debug("Creating script directory: " + scriptDirectory);
+			FileSystem.createDirectory(scriptDirectory);
+		}
 		scriptDirectory = PathUtils.ensureDirectory(scriptDirectory);
 		ensureWatchCoordinator();
-		watcher.watchHotReload(scriptDirectory, scriptName, (filename:String) -> {
-			Log.info("Reload Watcher: Reloading script file: " + filename);
-			forceReload(scriptName);
+
+		// Watch entire directory, derive class names from paths
+		// onChanged: reload when .cppia is added/modified
+		// onRemoved: unload when .cppia is deleted
+		watcher.watchCompiledDirectory(scriptDirectory, (className:String) -> scriptCache.exists(className), (className:String) -> {
+			Log.info("Directory Reload Watcher: Reloading script: " + className);
+			forceReload(className);
+		}, (className:String) -> {
+			Log.info("Directory Reload Watcher: Unloading script (file removed): " + className);
+			unload(className);
 		});
+
+		directoryHotReloadEnabled = true;
 		return true;
+	}
+
+	/** @deprecated Use setupDirectoryHotReloadWatch instead */
+	private function setupHotReloadWatch(scriptName:String):Bool {
+		// Delegate to directory watch (it's now all handled centrally)
+		return setupDirectoryHotReloadWatch();
 	}
 
 	public function forceReload(scriptName:String, ?onLoaded:String->ScriptInfo->Void):Void {
@@ -416,15 +498,28 @@ class ScriptLoader implements IScriptLoader {
 	}
 
 	public function unload(scriptName:String):Void {
-		if (scriptCache.exists(scriptName)) {
+		var cachedScriptInfo = scriptCache.get(scriptName);
+		if (cachedScriptInfo != null) {
 			scriptCache.remove(scriptName);
 			Log.debug("Unloaded script: " + scriptName);
+			// Notify the original listener (e.g. ScriptHost) that the script is gone
+			// so it can stop using it (sets scriptLoaded=false in the host).
+			if (cachedScriptInfo.loadedCallback != null) {
+				cachedScriptInfo.loadedCallback(scriptName, null);
+			}
 			#if sys
 			if (watcher != null) {
 				watcher.unload(scriptName);
 			}
 			#end
 		}
+	}
+
+	/**
+	 * Test helper - check if a script is currently loaded.
+	 */
+	public function isLoaded(scriptName:String):Bool {
+		return scriptCache.exists(scriptName);
 	}
 
 	public function dispose() {

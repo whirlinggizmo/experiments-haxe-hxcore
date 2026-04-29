@@ -9,7 +9,8 @@ import tests.scripting.ScriptPathResolverTest;
 import tests.scripting.RuntimeIntegrationTest;
 import tests.scripting.RuntimeConfigIntegrationTest;
 import tests.scripting.CppiaOverrideIntegrationTest;
-import tests.scripting.CppiaHcrIntegrationTest;
+import tests.scripting.CppiaHcrCompileTest;
+import tests.scripting.CppiaHcrFileEventsTest;
 import tests.scripting.JsLoaderIntegrationTest;
 #if sys
 import tests.util.PathUtilsRelativePathTest;
@@ -27,7 +28,8 @@ class RunTests {
 		runner.addCase(new RuntimeConfigIntegrationTest());
 #if cpp
 		runner.addCase(new CppiaOverrideIntegrationTest());
-		runner.addCase(new CppiaHcrIntegrationTest());
+		runner.addCase(new CppiaHcrCompileTest());
+		runner.addCase(new CppiaHcrFileEventsTest());
 #end
 #if js
 		runner.addCase(new JsLoaderIntegrationTest());
