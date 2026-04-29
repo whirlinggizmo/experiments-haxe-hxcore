@@ -1,7 +1,6 @@
 import hxcore.flecs.Types.Float32;
 import hxcore.flecs.Types.Ref;
 import hxcore.flecs.Component;
-import hxcore.flecs.ComponentMacro;
 import hxcore.flecs.Entity;
 import hxcore.flecs.Flecs;
 import hxcore.flecs.Observer;
@@ -66,10 +65,10 @@ class FlecsTest {
     Flecs.init();
     Log.info('Flecs version: ${Flecs.version()}');
 
-    var position = ComponentMacro.ofType(Position);
-    var velocity = ComponentMacro.ofType(Velocity);
-    var destination = ComponentMacro.ofType(Destination);
-    var testComp = ComponentMacro.ofType(TestComponent);
+    var position = Component.of(Position);
+    var velocity = Component.of(Velocity);
+    var destination = Component.of(Destination);
+    var testComp = Component.of(TestComponent);
 
     System.addSystem("MoveSystem", [position, velocity], function(it) {
       it.each2(position, velocity, function(pos:Ref<Position>, vel:Ref<Velocity>) {
