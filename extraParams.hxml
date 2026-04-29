@@ -2,3 +2,6 @@
 
 # Register components macro
 --macro hxcore.flecs.flecs_wrapper.bindings.haxe.ComponentMacro.register()
+
+# Make it.each(...) extension available by default
+--macro hxcore.flecs.SystemIterMacro.register()

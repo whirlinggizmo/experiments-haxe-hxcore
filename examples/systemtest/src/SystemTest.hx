@@ -1,73 +1,61 @@
-import cpp.Float32;
-import cpp.Native;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Component;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Entity;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.System;
+import hxcore.flecs.NativePtr;
+import hxcore.flecs.Component;
+import hxcore.flecs.Entity;
+import hxcore.flecs.Flecs;
+import hxcore.flecs.System;
+import hxcore.flecs.Types.Float32;
 
-@:structAccess
-@:structInit
-@:nativeGen
-@:native("MyComponent")
+@:component("MyComponent")
 class MyComponent {
   public var x:Float32;
   public var y:Float32;
 
-  public function new() {}
+  public function new(x:Float32 = 0.0, y:Float32 = 0.0) {
+    this.x = x;
+    this.y = y;
+  }
 }
 
-@:structAccess
-@:structInit
-@:nativeGen
-@:native("SysPos")
+@:component("SysPos")
 class SysPos {
   public var x:Float32;
   public var y:Float32;
 
-  public function new() {}
+  public function new(x:Float32 = 0.0, y:Float32 = 0.0) {
+    this.x = x;
+    this.y = y;
+  }
 }
 
-@:structAccess
-@:structInit
-@:nativeGen
-@:native("SysVel")
+@:component("SysVel")
 class SysVel {
   public var x:Float32;
   public var y:Float32;
 
-  public function new() {}
+  public function new(x:Float32 = 0.0, y:Float32 = 0.0) {
+    this.x = x;
+    this.y = y;
+  }
 }
 
 class SystemTest {
   public static function main() {
     Flecs.init();
 
-    var position = Component.create("SysPos", Native.sizeof(SysPos));
-    var velocity = Component.create("SysVel", Native.sizeof(SysVel));
-    var myComponent = Component.create("MyComponent", Native.sizeof(MyComponent));
+    var position = Component.of(SysPos);
+    var velocity = Component.of(SysVel);
+    var myComponent = Component.of(MyComponent);
 
     var entity = Entity.create("Entity");
-    var posVal = new SysPos();
-    posVal.x = 0.0;
-    posVal.y = 0.0;
-    entity.set(position, posVal);
-
-    var velVal = new SysVel();
-    velVal.x = 1.0;
-    velVal.y = 1.5;
-    entity.set(velocity, velVal);
+    entity.set(position, new SysPos(0.0, 0.0));
+    entity.set(velocity, new SysVel(1.0, 1.5));
     entity.add(myComponent);
 
-    var sysId = System.addSystemIds("TestSystem", [position.id, velocity.id], function(it) {
-      var count:Int = cast it.count;
-      for (i in 0...count) {
-        var p:cpp.Pointer<SysPos> = it.colTyped(position.id, i);
-        var v:cpp.Pointer<SysVel> = it.colTyped(velocity.id, i);
-        if (p != null && v != null) {
-          p.ref.x += v.ref.x * it.dt;
-          p.ref.y += v.ref.y * it.dt;
-        }
-      }
+    var sysId = System.addSystem("TestSystem", [position, velocity], function(it) {
+      it.each([position, velocity], function(pos:SysPos, vel:SysVel) {
+        pos.x += vel.x * it.dt;
+        pos.y += vel.y * it.dt;
+      });
     });
 
     if (sysId == 0) {
@@ -78,10 +66,10 @@ class SystemTest {
       Flecs.progress(0.1);
     }
 
-    var p2Ptr:cpp.Pointer<SysPos> = entity.getPtr(position);
-    if (p2Ptr != null) {
-      var p2 = p2Ptr.ref;
-      trace('Position: (${p2.x}, ${p2.y})');
+    var posPtr:NativePtr<SysPos> = entity.tryGet(position);
+    if (posPtr != null) {
+      var pos = posPtr.ref;
+      trace('Position: (${pos.x}, ${pos.y})');
     }
 
     Flecs.fini();

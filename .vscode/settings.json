@@ -4,7 +4,7 @@
     },
     "haxe.configurations": [
         [
-          "hxml/vscode.hxml"
+          "vscode.hxml"
         ],
       
     ],

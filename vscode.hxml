@@ -29,6 +29,9 @@
 # set the define so those blocks are parsed
 -D scriptable
 
+# Make it.each(...) extension available to the language server.
+--macro hxcore.flecs.SystemIterMacro.register()
+
 # enable the cpp target so sys/cpp modules are found
 -cpp out/bitbucket
 

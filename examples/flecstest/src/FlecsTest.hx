@@ -1,12 +1,10 @@
 import hxcore.flecs.Types.Float32;
-import hxcore.flecs.Types.Ref;
 import hxcore.flecs.Component;
-import hxcore.flecs.ComponentMacro;
 import hxcore.flecs.Entity;
 import hxcore.flecs.Flecs;
 import hxcore.flecs.Observer;
 import hxcore.flecs.System;
-
+import hxcore.flecs.NativePtr;
 import hxcore.logging.Log;
 
 @:component("Position")
@@ -62,27 +60,26 @@ class TestComponent {
 
 
 class FlecsTest {
+
   public static function main() {
     Flecs.init();
     Log.info('Flecs version: ${Flecs.version()}');
 
-    var position = ComponentMacro.ofType(Position);
-    var velocity = ComponentMacro.ofType(Velocity);
-    var destination = ComponentMacro.ofType(Destination);
-    var testComp = ComponentMacro.ofType(TestComponent);
+    var position = Component.of(Position);
+    var velocity = Component.of(Velocity);
+    var destination = Component.of(Destination);
+    var testComp = Component.of(TestComponent);
 
     System.addSystem("MoveSystem", [position, velocity], function(it) {
-      it.each2(position, velocity, function(pos:Ref<Position>, vel:Ref<Velocity>) {
-        pos.ref.x += vel.ref.x * it.dt;
-        pos.ref.y += vel.ref.y * it.dt;
-        pos.ref.z += vel.ref.z * it.dt;
+      it.each([position, velocity], function(pos:Position, vel:Velocity) {
+        pos.x += vel.x * it.dt;
+        pos.y += vel.y * it.dt;
+        pos.z += vel.z * it.dt;
       });
     });
 
     Observer.addObserver([position], [Flecs.EcsOnSet], function(it) {
-      var ptr:Ref<Position> = it.colPtrByComponentTyped(position);
-      if (ptr == null) return;
-      Log.info('Observer: Position set -> (${ptr.ref.x}, ${ptr.ref.y})');
+      Log.info('Observer: Position set');
     });
 
     var entity = Entity.create("Entity");
@@ -91,17 +88,21 @@ class FlecsTest {
     entity.add(destination);
     entity.add(testComp);
 
-    entity.set(velocity, new Velocity(1.0, 2.0, 0.0));
+    entity.set(velocity, {x: 1.0, y: 2.0, z: 0.0});
     entity.set(position, new Position(12.0, 34.0, 0.0));
+
+    entity.remove(velocity);
 
     for (i in 0...3) {
       Flecs.progress(1.0);
-      var pos:Ref<Position> = entity.tryGet(position);
-      var vel:Ref<Velocity> = entity.tryGet(velocity);
-      var tc:Ref<TestComponent> = entity.tryGet(testComp);
-      if (pos != null) Log.info('Position: (${pos.ref.x}, ${pos.ref.y})');
-      if (vel != null) Log.info('Velocity: (${vel.ref.x}, ${vel.ref.y})');
-      if (tc != null) Log.info('TestComponent: (${tc.ref.x}, ${tc.ref.y})');
+        if (entity.has(velocity)) {
+          var vel:Velocity = entity.get(velocity);
+          Log.info('Velocity: (${vel.x}, ${vel.y})');
+        }
+      var pos:Position = entity.get(position);
+      var tc:TestComponent = entity.get(testComp);
+      Log.info('Position: (${pos.x}, ${pos.y})');
+      Log.info('TestComponent: (${tc.x}, ${tc.y})');
     }
 
     Flecs.fini();

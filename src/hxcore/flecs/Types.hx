@@ -11,5 +11,3 @@ typedef Int32  = cpp.Int32;
 typedef UInt32 = cpp.UInt32;
 typedef Int64  = cpp.Int64;
 typedef UInt64 = cpp.UInt64;
-
-typedef Ref<T> = cpp.Pointer<T>;
