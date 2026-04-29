@@ -1,11 +1,12 @@
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Types.Float32;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Types.Ref;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Component;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.ComponentMacro;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Entity;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Flecs;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.Observer;
-import hxcore.flecs.flecs_wrapper.bindings.haxe.System;
+import hxcore.flecs.Types.Float32;
+import hxcore.flecs.Types.Ref;
+import hxcore.flecs.Component;
+import hxcore.flecs.ComponentMacro;
+import hxcore.flecs.Entity;
+import hxcore.flecs.Flecs;
+import hxcore.flecs.Observer;
+import hxcore.flecs.System;
+
 import hxcore.logging.Log;
 
 @:component("Position")
