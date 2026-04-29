@@ -4,7 +4,7 @@
 # the hxcpp debugger doesn't allow for args or cwd :(
 # NOTE:  We have since forked the debugger (https://github.com/robknopf/hxcpp-debugger) 
 #   and added support for args and cwd.  This file is likely deprecated, but we keep it around if 
-#   we don't have  the updated hxcpp-debugger.
+#   we don't have the updated hxcpp-debugger.
 
 # get the current directory (this shell script's directory)
 currentDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )

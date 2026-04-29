@@ -1,0 +1,4 @@
+# haxelib convention.  haxelib will automatically append extraParams.hxml when the library is included
+
+# Register components macro
+--macro hxcore.flecs.flecs_wrapper.bindings.haxe.ComponentMacro.register()
