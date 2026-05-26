@@ -32,6 +32,13 @@ class ScriptCompiler {
 		var classesInfoAbsolutePath = PathUtils.toAbsolutePath(classesInfoPath);
 		var rootDir = ScriptPathResolver.sourceRootParent(scriptSourceAbsolutePath);
 		var haxeArgs = ["-lib", "hxcore"];
+		#if debug
+		//trace("ADDING DEBUG FLAGS TO CPPIA");
+		haxeArgs.push('--debug');
+		haxeArgs.push('-lib');
+		haxeArgs.push('hxcpp-debug-server');
+		#end
+
 
 		if (rootDir != null && rootDir.length > 0) {
 			haxeArgs.push("-cp");

@@ -7,8 +7,8 @@
 #--next
 #--macro core.macros.ScriptCompiler.generateScriptsList('scripts', 'gen/scripts.hxml')
 #--cmd echo "OK"
-
 #--next
+
 #--cmd echo "Building .cpp target (with cppia support)...\n"
 #--next
 
@@ -42,6 +42,19 @@
 --debug
 # vscode debugger
 -lib hxcpp-debug-server
+
+# Colon-separated source roots for CPPIA source resolution in hxcpp 4.x debugger.
+# Relative paths are resolved from the executable directory ($ORIGIN). Optional
+# runtime env HXCPP_CPPIA_SOURCE_ROOTS is merged additively (same syntax).
+-D HXCPP_CPPIA_SOURCE_ROOTS=..
+
+# hxcpp-debugger needs these for cppia script debugging
+--macro include('haxe.NativeStackTrace', true)
+--macro keep('haxe.NativeStackTrace')
+
+--macro include('haxe.CallStack', true)
+--macro keep('haxe.CallStack')
+
 --dce no
 
 --define HAXE_OUTPUT_FILE=ScriptTest
@@ -78,7 +91,7 @@ scripts.Test
 -lib hxcore
 #	macro static public function compileScript(rootDir:String, scriptsDir:String, outputDir:String, classesInfoPath:String, targetType:String,
 
---macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'gen', 'scripts/export_classes.filtered.info', 'cppia', [], 'scripts.Test')
+--macro hxcore.scripting.ScriptCompiler.compileScript('.', 'scripts', 'gen', 'scripts/export_classes.filtered.info', 'cppia', ['--debug', '-lib', 'hxcpp-debug-server'], 'scripts.Test')
 
 --cmd echo "Build of ScriptTest complete."
 

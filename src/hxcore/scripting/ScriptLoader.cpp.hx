@@ -53,7 +53,14 @@ class ScriptLoader implements IScriptLoader {
 		externalScriptsEnabled = true;
 
 		#if !emscripten
+		#if debug
+		// CPPIA JIT compiles script bytecode to native code; hxcpp breakpoints only
+		// fire in the interpreted path (CPPIA_STACK_LINE / __hxcpp_on_line_changed).
+		enableJITCompilation(false);
+		Log.debug("CPPIA JIT disabled in debug build so script breakpoints work");
+		#else
 		enableJITCompilation(true);
+		#end
 		#end
 	}
 
